@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model TelegramAccount {
+  id           Int      @id @default(autoincrement())
+  telegramId   Int      @unique
+  isBot        Boolean
+  firstName    String
+  lastName     String?
+  username     String?
+  languageCode String?
+  isPremium    Boolean?
+  createdAt    DateTime @default(now())
+
+  requests Request[]
+}
+
+enum RequestStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+}
+
+model Request {
+  id                Int           @id @default(autoincrement())
+  query             Json
+  status            RequestStatus
+  telegramAccountId Int?
+  resultId          Int?
+  createdAt         DateTime      @default(now())
+
+  result          RequestResult?   @relation(fields: [resultId], references: [id])
+  telegramAccount TelegramAccount? @relation(fields: [telegramAccountId], references: [id])
+  logs            RequestLog[]
+}
+
+model RequestLog {
+  id        Int      @id @default(autoincrement())
+  requestId Int
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+
+  request Request @relation(fields: [requestId], references: [id])
+}
+
+model RequestResult {
+  id        Int      @id @default(autoincrement())
+  payload   Json
+  createdAt DateTime @default(now())
+
+  requests Request[]
+}
+
+model Setting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value Json
+}
+
+model Cache {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}

@@ -1,0 +1,15 @@
+<div class="border-[#CFD9DE] border rounded-[12px] overflow-hidden my-[15px] flex">
+    <div class="border-[#CFD9DE] border-r w-[130px] h-[130px] relative shrink-0">
+        {% if card.binding_values.photo_image_full_size_original is defined %}
+            <img
+                src="{{ card.binding_values.player_image_original.image_value.url }}"
+                class="absolute inset-0 w-full h-full object-cover"
+            >
+        {% endif %}
+    </div>
+    <div class="p-[12px] flex flex-col justify-center gap-[5px] min-w-0 h-[130px]">
+        <div class="font-[15px] leading-tight text-[#536571]">{{ card.binding_values.domain.string_value }}</div>
+        <div class="font-[15px] leading-tight truncate text-ellipsis">{{ card.binding_values.title.string_value }}</div>
+        <div class="font-[15px] leading-tight text-[#536571] overflow-hidden" style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;">{{ card.binding_values.description.string_value }}</div>
+    </div>
+</div>

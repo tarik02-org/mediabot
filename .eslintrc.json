@@ -1,0 +1,54 @@
+{
+    "extends": [
+        "@tarik02/eslint-config-type-1",
+        "@tarik02/eslint-config-type-1-import"
+    ],
+    "env": {
+        "browser": true
+    },
+    "settings": {
+        "import/resolver": {
+            "typescript": {
+                "project": "./tsconfig.json"
+            }
+        }
+    },
+    "rules": {
+        "@typescript-eslint/comma-dangle": [
+            "error",
+            "always-multiline"
+        ],
+        "import/namespace": "off",
+        "import/order": [
+            "error",
+            {
+                "alphabetize": {
+                    "order": "asc",
+                    "caseInsensitive": true
+                },
+                "newlines-between": "always",
+                "groups": [
+                    [
+                        "builtin",
+                        "external"
+                    ],
+                    "internal",
+                    "parent",
+                    [
+                        "sibling",
+                        "index"
+                    ]
+                ],
+                "pathGroups": [
+                    {
+                        "pattern": "@/**",
+                        "group": "internal"
+                    }
+                ],
+                "pathGroupsExcludedImportTypes": [
+                    "builtin"
+                ]
+            }
+        ]
+    }
+}

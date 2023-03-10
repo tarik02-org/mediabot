@@ -1,0 +1,56 @@
+<div class="border-[#CFD9DE] border rounded-[12px] overflow-hidden my-[15px] p-[12px]">
+    <div class="grow flex flex-col min-w-0 text-[15px]">
+        <div class="leading-5 text-ellipsis truncate">
+            {% if tweet.user.profile_image_url_https %}
+                <span class="inline-block -mb-[3px] w-[18px] h-[18px] rounded-[18px] relative overflow-hidden shrink-0">
+                    <img
+                        src="{{ tweet.user.profile_image_url_https }}"
+                        class="absolute inset-0 object-contain"
+                    >
+                </span>
+            {% endif %}
+            <span class="font-bold">{{ tweet.user.name }}</span>
+            {% if tweet.user.verified %}
+                <span class="w-[16px] h-[16px] inline-block fill-current -ml-[3px] -mb-[3px]">
+                    {% include 'twitter/icons/verified.svg' %}
+                </span>
+            {% endif %}
+            <span class="text-[#536571]">{{ '@' }}{{ tweet.user.screen_name }}</span>
+        </div>
+    </div>
+
+    <p class="mt-[4px] text-[15px] leading-tight whitespace-pre-wrap">{{ twitter_text({
+        text: tweet.full_text,
+        displayTextRange: tweet.display_text_range ?? [0, (tweet.full_text | length) - 1],
+        entities: tweet.entities,
+        removedUrls: [
+            tweet.quoted_status_permalink.expanded ?? null,
+            tweet.card.url ?? null
+        ] | filter(v => v),
+    }) }}</p>
+
+    {% if tweet.extended_entities.media ?? false %}
+        <div class="-m-[12px] mt-[8px] flex flex-wrap gap-[2px]">
+            {% for media in tweet.extended_entities.media %}
+                {% if media.type in ['photo', 'video'] %}
+                    <div class="grow basis-[calc(50%-1px)] relative aspect-[{{ media.original_info.width }}/{{ media.original_info.height }}]">
+                        <img
+                            src="{{ media.media_url_https }}"
+                            class="absolute inset-0 object-cover w-full h-full"
+                        >
+
+                        {% if media.type == 'video' %}
+                            <div class="absolute left-[10px] bottom-[10px] text-[15px] bg-[#000]/80 text-white leading-none rounded-[4px] p-[3px]">
+                                {{
+                                    media.video_info.duration_millis // 1000 // 60
+                                }}:{{
+                                    media.video_info.duration_millis // 1000 % 60
+                                }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>

@@ -1,0 +1,83 @@
+<div class="flex gap-[10px]">
+    <div class="flex flex-col shrink-0 items-center">
+        <div class="relative h-[48px] w-[48px] overflow-hidden rounded-[40px]">
+            {% if tweet.user.profile_image_url_https %}
+                <img
+                    src="{{ tweet.user.profile_image_url_https }}"
+                    class="absolute inset-0 object-contain"
+                />
+            {% endif %}
+        </div>
+
+        <div class="grow w-[2px] bg-[#ABACAD] mt-[8px]"></div>
+    </div>
+    <div class="grow min-w-0">
+        <div class="text-[15px] leading-5 text-ellipsis truncate">
+            <span class="font-bold">{{ tweet.user.name }}</span>
+            {% if tweet.user.verified %}
+                <div class="w-[16px] h-[16px] inline-block fill-current -ml-[3px] -mb-[3px]">
+                    {% include 'twitter/icons/verified.svg' %}
+                </div>
+            {% endif %}
+            <span class="text-[#536571]">
+                {{ '@' }}{{ tweet.user.screen_name }}
+                ·
+                {{ now }}
+                {{ tweet.created_at }}
+                {# {{ date_diff(now, tweet.created_at | parse_date('ccc LLL dd HH:mm:ss ZZZ yyyy')) | date }} #}
+            </span>
+        </div>
+        {% if replyTo %}
+            <div class="text-[13px] leading-5 text-[#536571]">
+                Replying to <span class="text-[#1D9BF0]">{{ '@' }}{{ replyTo.user.screen_name }}</span>
+            </div>
+        {% endif %}
+
+        <p class="mt-[5px] whitespace-pre-wrap text-base leading-tight">{{ twitter_text({
+            text: tweet.full_text,
+            displayTextRange: tweet.display_text_range ?? [0, (tweet.full_text | length) - 1],
+            entities: tweet.entities,
+            removedUrls: [
+                tweet.quoted_status_permalink.expanded ?? null,
+                tweet.card.url ?? null
+            ] | filter(v => v),
+        }) }}</p>
+
+        {% if tweet.extended_entities.media ?? false %}
+            <div class="border-[#CFD9DE] border rounded-[12px] overflow-hidden my-[15px] flex flex-wrap gap-[2px]">
+                {% for media in tweet.extended_entities.media %}
+                    {% if media.type in ['photo', 'video'] %}
+                        <div class="grow basis-[calc(50%-1px)] relative aspect-[{{ media.original_info.width }}/{{ media.original_info.height }}]">
+                            <img
+                                src="{{ media.media_url_https }}"
+                                class="absolute inset-0 object-cover w-full h-full"
+                            >
+
+                            {% if media.type == 'video' %}
+                                <div class="absolute left-[10px] bottom-[10px] text-[15px] bg-[#000]/80 text-white leading-none rounded-[4px] p-[3px]">
+                                    {{
+                                        media.video_info.duration_millis // 1000 // 60
+                                    }}:{{
+                                        media.video_info.duration_millis // 1000 % 60
+                                    }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if tweet.quoted_status is defined %}
+            {% include 'twitter/quoted.twig' with {
+                tweet: tweet.quoted_status,
+            } %}
+        {% endif %}
+
+        {% if tweet.card is defined %}
+            {% include "twitter/cards/#{tweet.card.name}.twig" ignore missing with {
+                card: tweet.card,
+            } %}
+        {% endif %}
+    </div>
+</div>

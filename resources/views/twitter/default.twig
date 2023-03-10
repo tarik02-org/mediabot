@@ -1,0 +1,55 @@
+<div class="flex flex-col">
+    <div class="flex items-center gap-[10px] min-w-0">
+        <div class="w-[48px] h-[48px] rounded-[40px] relative overflow-hidden shrink-0">
+            {% if tweet.user.profile_image_url_https %}
+                <img
+                    src="{{ tweet.user.profile_image_url_https }}"
+                    class="absolute inset-0 object-contain"
+                >
+            {% endif %}
+        </div>
+        <div class="grow flex flex-col min-w-0 text-[15px]">
+            <div class="font-bold leading-5 text-ellipsis truncate">
+                {{ tweet.user.name }}
+                {% if tweet.user.verified %}
+                    <div class="w-[16px] h-[16px] inline-block fill-current -ml-[3px] -mb-[3px]">
+                        {% include 'twitter/icons/verified.svg' %}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="text-[#536571] leading-5">{{ '@' }}{{ tweet.user.screen_name }}</div>
+        </div>
+    </div>
+
+    {% if replyTo.user is defined %}
+        <div class="text-[13px] leading-5 text-[#536571]">
+            Replying to <span class="text-[#1D9BF0]">{{ '@' }}{{ replyTo.user.screen_name }}</span>
+        </div>
+    {% endif %}
+
+    <p class="text-xl leading-tight whitespace-pre-wrap">{{ twitter_text({
+        text: tweet.full_text,
+        displayTextRange: tweet.display_text_range ?? [0, (tweet.full_text | length) - 1],
+        entities: tweet.entities,
+        removedUrls: [
+            tweet.quoted_status_permalink.expanded ?? null,
+            tweet.card.url ?? null
+        ] | filter(v => v),
+    }) }}</p>
+
+    {% if tweet.quoted_status is defined %}
+        {% include 'twitter/quoted.twig' with {
+            tweet: tweet.quoted_status,
+        } %}
+    {% endif %}
+
+    {% if tweet.card is defined %}
+        {% include "twitter/cards/#{tweet.card.name}.twig" ignore missing with {
+            card: tweet.card,
+        } %}
+    {% endif %}
+
+    <div class="text-[15px] mt-[5px] text-[#536571]">
+        {{ tweet.created_at | parse_date('ccc LLL dd HH:mm:ss ZZZ yyyy') | date('H:i · M d, Y') }}
+    </div>
+</div>

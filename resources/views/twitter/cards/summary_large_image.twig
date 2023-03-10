@@ -1,0 +1,12 @@
+<div class="border-[#CFD9DE] border rounded-[12px] overflow-hidden my-[15px]">
+    <div class="border-[#CFD9DE] border-b">
+        {% if card.binding_values.photo_image_full_size_original is defined %}
+            <img src="{{ card.binding_values.photo_image_full_size_original.image_value.url }}">
+        {% endif %}
+    </div>
+    <div class="p-[12px] flex flex-col gap-[5px]">
+        <div class="font-[15px] leading-tight text-[#536571]">{{ card.binding_values.domain.string_value }}</div>
+        <div class="font-[15px] leading-tight truncate text-ellipsis">{{ card.binding_values.title.string_value }}</div>
+        <div class="font-[15px] leading-tight text-[#536571] overflow-hidden" style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;">{{ card.binding_values.description.string_value }}</div>
+    </div>
+</div>
