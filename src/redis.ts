@@ -2,13 +2,11 @@ import { Redis } from 'ioredis';
 import { default as Redlock } from 'redlock';
 import { z } from 'zod';
 
-import { getEnv } from './env.js';
-
 const env = z.object({
     REDIS_URL: z.string(),
     REDIS_PREFIX: z.string().optional(),
 }).parse(
-    getEnv(),
+    process.env,
 );
 
 export const redisPrefix = env.REDIS_PREFIX ?? '';

@@ -9,7 +9,6 @@ import { Browser } from 'puppeteer';
 import * as radash from 'radash';
 import { z } from 'zod';
 
-import { getEnv } from '../../env.js';
 import { log } from '../../log.js';
 import { processRequests } from '../../resolvers/lib.js';
 import { filter, makeSearcher, walkDeep } from '../../utils/objectSearch.js';
@@ -51,7 +50,7 @@ const env = z.object({
     PUPPETEER_REMOTE_URL: z.string().optional(),
     PUPPETEER_PROXY: z.string().optional(),
 }).parse(
-    getEnv(),
+    process.env,
 );
 
 radash.defer(async defer => {

@@ -7,7 +7,6 @@ import * as radash from 'radash';
 import * as uuid from 'uuid';
 import { z } from 'zod';
 
-import { getEnv } from '../../env.js';
 import { log } from '../../log.js';
 import { redis, redisPrefix } from '../../redis.js';
 import { processRequests } from '../../resolvers/lib.js';
@@ -19,7 +18,7 @@ type Result = z.infer<(typeof processor)['resultSchema']>;
 const env = z.object({
     YTDLP_PATH: z.string(),
 }).parse(
-    getEnv(),
+    process.env,
 );
 
 await processRequests(
