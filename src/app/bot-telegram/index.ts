@@ -321,6 +321,7 @@ switch (env.BOT_MODE) {
         );
 
         app.listen({
+            host: '0.0.0.0',
             port: env.BOT_WEBHOOK_PORT,
         });
 
