@@ -1,17 +1,45 @@
 import '../../env.js';
 
-import puppeteer from 'puppeteer';
+import * as nodePath from 'node:path';
+import puppeteer, { Browser } from 'puppeteer';
 import * as radash from 'radash';
 import * as uuid from 'uuid';
+import { z } from 'zod';
 
 import { redis, redisPrefix } from '../../redis.js';
 import { processRequests } from '../../resolvers/lib.js';
 
 import { processor } from './api.js';
 
+const env = z.object({
+    PUPPETEER_EXECUTABLE_PATH: z.string().optional(),
+    PUPPETEER_ARGS: z.preprocess(
+        (value: unknown) => typeof value === 'string' ? value.split(' ') : value,
+        z.array(z.string()),
+    ).optional(),
+    PUPPETEER_DATA_PATH: z.string().optional(),
+    PUPPETEER_REMOTE_URL: z.string().optional(),
+}).parse(
+    process.env,
+);
+
 await radash.defer(async defer => {
-    const browser = await puppeteer.launch();
-    defer(async () => await browser.close());
+    let browser: Browser;
+
+    if (env.PUPPETEER_REMOTE_URL !== undefined) {
+        browser = await puppeteer.connect({
+            browserURL: env.PUPPETEER_REMOTE_URL,
+        });
+
+        defer(async () => await browser.close());
+    } else {
+        browser = await puppeteer.launch({
+            executablePath: env.PUPPETEER_EXECUTABLE_PATH,
+            args: env.PUPPETEER_ARGS,
+        });
+
+        defer(() => browser.disconnect());
+    }
 
     await processRequests(
         processor,
