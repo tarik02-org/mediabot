@@ -1,6 +1,7 @@
 import '../../env';
 
-import { InputFile } from 'grammy';
+import fastify from 'fastify';
+import { InputFile, webhookCallback } from 'grammy';
 import { InputMediaAnimation, InputMediaPhoto, InputMediaVideo } from 'grammy/types';
 import lodash from 'lodash';
 import * as nodePath from 'node:path';
@@ -21,6 +22,7 @@ import * as twitterResolver from '../parser-twitter/api.js';
 import * as ytdlpResolver from '../parser-ytdlp/api.js';
 import * as renderResolver from '../render/api.js';
 
+import { env } from './env.js';
 import { getAccountByUser } from './getAccountByUser.js';
 import { mapTwitterMedia } from './twitter.js';
 import { uploadFileToTelegram } from './uploadFileToTelegram.js';
@@ -296,7 +298,36 @@ log.info('Starting Telegram bot...');
 telegram.catch(
     err => log.error(err),
 );
-telegram.start();
+
+switch (env.BOT_MODE) {
+    case 'polling':
+        telegram.start();
+        break;
+
+    case 'webhook': {
+        const app = fastify({
+            logger: true,
+        });
+
+        app.get('/health', async () => {
+            return {
+                status: 'ok',
+            };
+        });
+
+        app.all(
+            env.BOT_WEBHOOK_PATH,
+            webhookCallback(telegram, 'fastify'),
+        );
+
+        app.listen({
+            port: env.BOT_WEBHOOK_PORT,
+        });
+
+        log.info(`Starting Telegram bot webhook server on port ${ env.BOT_WEBHOOK_PORT }...`);
+        break;
+    }
+}
 
 const processDefaultMediaCallback = async (
     context: z.TypeOf<typeof contextSchema>,
@@ -413,9 +444,9 @@ const processDefaultMediaCallback = async (
                     let file = media.url;
 
                     if (typeof file !== 'string') {
-                        const temporaryMessage = await telegram.api.sendPhoto(process.env.TEMPORARY_CHAT_ID!, file);
+                        const temporaryMessage = await telegram.api.sendPhoto(env.TEMPORARY_CHAT_ID, file);
 
-                        telegram.api.deleteMessage(process.env.TEMPORARY_CHAT_ID!, temporaryMessage.message_id).catch(
+                        telegram.api.deleteMessage(env.TEMPORARY_CHAT_ID, temporaryMessage.message_id).catch(
                             error => log.error(error, 'Failed to delete temporary message'),
                         );
 
@@ -434,9 +465,9 @@ const processDefaultMediaCallback = async (
                     let file = media.url;
 
                     if (typeof file !== 'string') {
-                        const temporaryMessage = await telegram.api.sendVideo(process.env.TEMPORARY_CHAT_ID!, file);
+                        const temporaryMessage = await telegram.api.sendVideo(env.TEMPORARY_CHAT_ID, file);
 
-                        telegram.api.deleteMessage(process.env.TEMPORARY_CHAT_ID!, temporaryMessage.message_id).catch(
+                        telegram.api.deleteMessage(env.TEMPORARY_CHAT_ID, temporaryMessage.message_id).catch(
                             error => log.error(error, 'Failed to delete temporary message'),
                         );
 
