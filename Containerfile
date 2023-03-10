@@ -74,6 +74,6 @@ FROM runtime AS app
 
 WORKDIR /app
 COPY --from=node_modules /app/node_modules /app/node_modules
-RUN yarn prisma generate
 
 ADD . .
+RUN yarn prisma generate
