@@ -103,8 +103,6 @@ export const processRequests = async <TQuery, TResult>(
     });
 
     while (abortSignal === undefined || abortSignal.aborted === false) {
-        log.debug('Waiting for jobs on queue...');
-
         await jobQueue.onIdle();
 
         const rawItem = await blockingRedis.brpop(queueKey, 1);
