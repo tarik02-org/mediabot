@@ -1,4 +1,4 @@
-import '../../env';
+import '../../env.js';
 
 import puppeteer from 'puppeteer';
 import * as radash from 'radash';

@@ -1,4 +1,4 @@
-import '../../env';
+import '../../env.js';
 
 import * as uuid from 'uuid';
 import { z } from 'zod';

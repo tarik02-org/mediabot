@@ -1,4 +1,4 @@
-import '../../env';
+import '../../env.js';
 
 import chalk from 'chalk';
 import lodash from 'lodash';

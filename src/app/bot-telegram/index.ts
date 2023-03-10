@@ -1,4 +1,4 @@
-import '../../env';
+import '../../env.js';
 
 import fastify from 'fastify';
 import { InputFile, webhookCallback } from 'grammy';

@@ -1,4 +1,4 @@
-import '../../env';
+import '../../env.js';
 
 import { execa } from 'execa';
 import * as nodeFs from 'node:fs/promises';

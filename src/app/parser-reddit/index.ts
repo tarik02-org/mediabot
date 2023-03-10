@@ -1,4 +1,4 @@
-import '../../env';
+import '../../env.js';
 
 import Ky from 'ky';
 import lodash from 'lodash';

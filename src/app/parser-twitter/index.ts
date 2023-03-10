@@ -1,4 +1,4 @@
-import '../../env';
+import '../../env.js';
 
 import { HTTPError } from 'got';
 import { z } from 'zod';
