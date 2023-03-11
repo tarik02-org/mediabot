@@ -1,5 +1,6 @@
 import '../../env.js';
 
+import Sentry from '@sentry/core';
 import fastify from 'fastify';
 import { InputFile, webhookCallback } from 'grammy';
 import { InputMediaAnimation, InputMediaPhoto, InputMediaVideo } from 'grammy/types';
@@ -296,7 +297,10 @@ telegram.on('chosen_inline_result', async ctx => {
 log.info('Starting Telegram bot...');
 
 telegram.catch(
-    err => log.error(err),
+    err => {
+        Sentry.captureException(err);
+        log.error(err);
+    },
 );
 
 switch (env.BOT_MODE) {

@@ -1,6 +1,7 @@
-import { User } from "grammy/types";
-import { prisma } from "../../prisma.js";
-import { redisPrefix, redlock } from "../../redis.js";
+import { User } from 'grammy/types';
+
+import { prisma } from '../../prisma.js';
+import { redisPrefix, redlock } from '../../redis.js';
 
 export const getAccountByUser = async (user: User) => await redlock.using(
     [ `${ redisPrefix }telegram:userToAccount:${ user.id }` ],
@@ -14,7 +15,7 @@ export const getAccountByUser = async (user: User) => await redlock.using(
                 lastName: user.last_name,
                 username: user.username,
                 languageCode: user.language_code,
-                isPremium: user.is_premium ?? false
+                isPremium: user.is_premium ?? false,
             },
             update: {
                 isBot: user.is_bot,
@@ -22,9 +23,9 @@ export const getAccountByUser = async (user: User) => await redlock.using(
                 lastName: user.last_name,
                 username: user.username,
                 languageCode: user.language_code,
-                isPremium: user.is_premium ?? false
+                isPremium: user.is_premium ?? false,
             },
-            where: { telegramId: user.id }
+            where: { telegramId: user.id },
         });
-    }
+    },
 );
