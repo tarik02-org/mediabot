@@ -49,7 +49,7 @@ const contextSchema = z.union([
 ]);
 
 export const processorCallback = createCallback(
-    'telegram',
+    `${ env.SERVICE_NAME }-processor`,
     contextSchema,
     [
         instagramResolver.processor,
@@ -61,7 +61,7 @@ export const processorCallback = createCallback(
 );
 
 export const twitterRenderCallback = createCallback(
-    'telegram-twitter-render',
+    `${ env.SERVICE_NAME }-twitter-render`,
     z.intersection(
         contextSchema,
         z.object({

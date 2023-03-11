@@ -4,6 +4,7 @@ export const env = z.intersection(
     z.object({
         BOT_TOKEN: z.string(),
         TEMPORARY_CHAT_ID: z.coerce.number(),
+        SERVICE_NAME: z.string(),
     }),
     z.union([
         z.object({
