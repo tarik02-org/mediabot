@@ -1,6 +1,7 @@
 import '../../env.js';
 
 import * as nodePath from 'node:path';
+import * as process from 'node:process';
 import puppeteer, { Browser } from 'puppeteer';
 import * as radash from 'radash';
 import * as uuid from 'uuid';
@@ -35,6 +36,7 @@ await radash.defer(async defer => {
     } else {
         browser = await puppeteer.launch({
             executablePath: env.PUPPETEER_EXECUTABLE_PATH,
+            userDataDir: env.PUPPETEER_DATA_PATH ?? nodePath.join(process.cwd(), './data'),
             args: env.PUPPETEER_ARGS,
         });
 

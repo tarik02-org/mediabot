@@ -39,7 +39,7 @@ const contextSchema = z.union([
     z.object({
         type: z.literal('chat'),
         chatId: z.number(),
-        messageId: z.optional(z.number()),
+        messageId: z.number().optional(),
         requiresReply: z.boolean(),
     }),
     z.object({
