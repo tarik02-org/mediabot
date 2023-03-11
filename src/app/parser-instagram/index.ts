@@ -133,10 +133,17 @@ radash.defer(async defer => {
             })
         ).flat(1);
 
-        log.debug({
-            link,
-            details,
-        }, 'Details on the page');
+        if (details.length === 0) {
+            log.warn({
+                url: page.url(),
+                content: await page.content(),
+            }, 'No details found');
+        } else {
+            log.debug({
+                link,
+                details,
+            }, 'Details on the page');
+        }
 
         const sharedData = findSharedData(details)[ 0 ];
         const postData = findPostData(details)[ 0 ];
