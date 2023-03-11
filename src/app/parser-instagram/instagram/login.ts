@@ -84,6 +84,16 @@ export const login = async (
         await page.waitForNavigation({
             waitUntil: 'networkidle2',
         });
+    } else if ((new URL(page.url())).pathname.startsWith('/challenge/')) {
+        if ((await page.$x('//[text()="We Detected An Unusual Login Attempt"]')).length > 0) {
+            ((
+                await page.$x('//button[text()="This Was Me"]')
+            )[ 0 ] as ElementHandle<HTMLButtonElement>)!.click();
+
+            await page.waitForNavigation({
+                waitUntil: 'networkidle2',
+            });
+        }
     }
 
     try {
