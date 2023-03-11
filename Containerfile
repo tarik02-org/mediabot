@@ -56,6 +56,9 @@ FROM base AS runtime
 
 COPY --from=ytdlp /usr/local/bin/yt-dlp /usr/local/bin/yt-dlp
 
+ADD resources/fonts/Twemoji.ttf /usr/share/fonts/truetype/
+RUN fc-cache -f -v
+
 
 ####################################################################################################
 # dev
