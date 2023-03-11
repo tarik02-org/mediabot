@@ -223,9 +223,11 @@ export const processCallbacks = async function *<TContext, TProcessors extends R
 ): AsyncGenerator<{
     [TKey in keyof TProcessors]: {
         name: TProcessors[TKey]['name'],
-        context: TContext,
-        result: z.TypeOf<TProcessors[TKey]['resultSchema']>
-    }
+        context: TContext
+    } & (
+        | { result: z.TypeOf<TProcessors[TKey]['resultSchema']> }
+        | { error: Error }
+    )
 }[number], void, void> {
     const blockingRedis = connectRedis();
     const queueKey = `${ redisPrefix }callbacks:${ callbackDef.name }`;
@@ -256,25 +258,27 @@ export const processCallbacks = async function *<TContext, TProcessors extends R
         const name = item.name;
         const context = callbackDef.context.parse(item.context);
 
-        const request = await prisma.request.findUniqueOrThrow({
-            where: { id },
-            include: { result: true },
-        });
+        try {
+            const request = await prisma.request.findUniqueOrThrow({
+                where: { id },
+                include: { result: true },
+            });
 
-        const processor = processorsMap.get(name);
-        if (processor === undefined) {
-            log.warn('Unknown processor', name);
-            continue;
+            const processor = processorsMap.get(name);
+            if (processor === undefined) {
+                throw new Error('Unknown processor');
+            }
+
+            if (request.result === null) {
+                throw new Error('No result found');
+            }
+
+            const result = processor.resultSchema.parse(request.result.payload);
+
+            yield { name, context, result };
+        } catch (error: any) {
+            yield { name, context, error };
         }
-
-        if (request.result === null) {
-            log.warn('Request result is null', request);
-            continue;
-        }
-
-        const result = processor.resultSchema.parse(request.result.payload);
-
-        yield { name, context, result };
     }
 };
 

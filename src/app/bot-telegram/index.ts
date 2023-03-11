@@ -510,122 +510,135 @@ const replyNotFound = async (ctx: z.TypeOf<typeof contextSchema>) => {
     }
 };
 
+const spawn = async (fn: () => Promise<void>) => {
+    fn().catch(
+        error => log.error(error),
+    );
+};
+
 (async () => {
     for await (const item of processCallbacks(processorCallback)) {
         log.debug(item, 'Processing callback');
 
-        try {
-            switch (item.name) {
-                case 'instagram':
-                    await processDefaultMediaCallback(
-                        item.context,
-                        item.result.title,
-                        item.result.url,
-                        item.result.media,
-                    );
-                    break;
+        spawn(async () => {
+            if ('error' in item) {
+                await replyNotFound(item.context);
+                return;
+            }
 
-                case 'reddit':
-                    await processDefaultMediaCallback(
-                        item.context,
-                        item.result.title,
-                        item.result.url,
-                        item.result.media,
-                    );
-                    break;
+            try {
+                switch (item.name) {
+                    case 'instagram':
+                        await processDefaultMediaCallback(
+                            item.context,
+                            item.result.title,
+                            item.result.url,
+                            item.result.media,
+                        );
+                        break;
 
-                case 'tiktok':
-                    await processDefaultMediaCallback(
-                        item.context,
-                        item.result.title,
-                        item.result.url,
-                        [
-                            {
-                                type: 'video',
-                                url: new InputFile(
-                                    (await redis.getBuffer(`${ redisPrefix }:${ item.result.video.ref }`))!,
-                                    'tiktok.mp4',
-                                ),
-                                size: item.result.video.size,
-                                duration: item.result.video.duration,
-                            },
-                        ],
-                    );
-                    break;
+                    case 'reddit':
+                        await processDefaultMediaCallback(
+                            item.context,
+                            item.result.title,
+                            item.result.url,
+                            item.result.media,
+                        );
+                        break;
 
-                case 'twitter': {
-                    const { chain, status } = item.result;
+                    case 'tiktok':
+                        await processDefaultMediaCallback(
+                            item.context,
+                            item.result.title,
+                            item.result.url,
+                            [
+                                {
+                                    type: 'video',
+                                    url: new InputFile(
+                                        (await redis.getBuffer(`${ redisPrefix }:${ item.result.video.ref }`))!,
+                                        'tiktok.mp4',
+                                    ),
+                                    size: item.result.video.size,
+                                    duration: item.result.video.duration,
+                                },
+                            ],
+                        );
+                        break;
 
-                    if (item.context.type === 'inline' && status.extended_entities?.media) {
-                        const media = status.extended_entities?.media[ 0 ];
+                    case 'twitter': {
+                        const { chain, status } = item.result;
+
+                        if (item.context.type === 'inline' && status.extended_entities?.media) {
+                            const media = status.extended_entities?.media[ 0 ];
+
+                            await processDefaultMediaCallback(
+                                item.context,
+                                status.full_text,
+                                `https://twitter.com/${ status.user.screen_name }/status/${ status.id_str }`,
+                                [
+                                    mapTwitterMedia(media),
+                                ],
+                            );
+                        } else {
+                            const content = await twing.render('twitter/preview.twig', {
+                                chain,
+                                tweet: status,
+                            });
+
+                            await submitRequest(
+                                renderResolver.processor,
+                                {
+                                    content: Buffer.from(content).toString('base64'),
+                                    selector: '#root',
+                                },
+                                bindCallback(twitterRenderCallback, {
+                                    ...item.context,
+                                    tweet: status,
+                                }),
+                            );
+                        }
+                        break;
+                    }
+
+                    case 'ytdlp': {
+                        const { title, url, media } = item.result;
+
+                        const mediaData = new Map<string, Buffer>();
+
+                        await Promise.all(
+                            media.map(async item => {
+                                const buffer = await redis.getBuffer(`${ redisPrefix }:${ item.ref }`);
+                                if (buffer === null) {
+                                    throw new Error(`Media "${ item.ref }" not found`);
+                                }
+
+                                mediaData.set(
+                                    item.ref,
+                                    buffer,
+                                );
+                            }),
+                        );
 
                         await processDefaultMediaCallback(
                             item.context,
-                            status.full_text,
-                            `https://twitter.com/${ status.user.screen_name }/status/${ status.id_str }`,
-                            [
-                                mapTwitterMedia(media),
-                            ],
+                            title,
+                            url,
+                            media.map(({ ref, ...item }) => ({
+                                ...item,
+                                url: new InputFile(
+                                    mediaData.get(ref)!,
+                                ),
+                            })),
                         );
-                    } else {
-                        const content = await twing.render('twitter/preview.twig', {
-                            chain,
-                            tweet: status,
-                        });
-
-                        await submitRequest(
-                            renderResolver.processor,
-                            {
-                                content: Buffer.from(content).toString('base64'),
-                                selector: '#root',
-                            },
-                            bindCallback(twitterRenderCallback, {
-                                ...item.context,
-                                tweet: status,
-                            }),
-                        );
+                        break;
                     }
-                    break;
                 }
+            } catch (error) {
+                log.error(error, 'Failed to process callback');
 
-                case 'ytdlp': {
-                    const { title, url, media } = item.result;
-
-                    const mediaData = new Map<string, Buffer>();
-
-                    await Promise.all(
-                        media.map(async item => {
-                            const buffer = await redis.getBuffer(`${ redisPrefix }:${ item.ref }`);
-                            if (buffer === null) {
-                                throw new Error(`Media "${ item.ref }" not found`);
-                            }
-
-                            mediaData.set(
-                                item.ref,
-                                buffer,
-                            );
-                        }),
-                    );
-
-                    await processDefaultMediaCallback(
-                        item.context,
-                        title,
-                        url,
-                        media.map(({ ref, ...item }) => ({
-                            ...item,
-                            url: new InputFile(
-                                mediaData.get(ref)!,
-                            ),
-                        })),
-                    );
-                    break;
-                }
+                await replyNotFound(item.context);
             }
-        } catch (error) {
-            log.error(error, 'Failed to process callback');
-
-            await replyNotFound(item.context);
-        }
+        });
     }
 })();
 
@@ -633,35 +646,37 @@ const replyNotFound = async (ctx: z.TypeOf<typeof contextSchema>) => {
     for await (const item of processCallbacks(twitterRenderCallback)) {
         log.debug(item, 'Processing twitter callback');
 
-        const { tweet } = item.context;
+        spawn(async () => {
+            const { tweet } = item.context;
 
-        try {
-            await processDefaultMediaCallback(
-                item.context,
-                null,
-                `https://twitter.com/${ tweet.user.screen_name }/status/${ tweet.id_str }`,
-                [
-                    {
-                        type: 'photo',
-                        url: new InputFile(
-                            (await redis.getBuffer(`${ redisPrefix }:${ item.result.ref }`))!,
-                            'image.png',
-                        ),
-                        size: {
-                            width: item.result.width,
-                            height: item.result.height,
+            try {
+                await processDefaultMediaCallback(
+                    item.context,
+                    null,
+                    `https://twitter.com/${ tweet.user.screen_name }/status/${ tweet.id_str }`,
+                    [
+                        {
+                            type: 'photo',
+                            url: new InputFile(
+                                (await redis.getBuffer(`${ redisPrefix }:${ item.result.ref }`))!,
+                                'image.png',
+                            ),
+                            size: {
+                                width: item.result.width,
+                                height: item.result.height,
+                            },
                         },
-                    },
 
-                    ...(tweet.extended_entities?.media ?? []).map(
-                        mapTwitterMedia,
-                    ),
-                ],
-            );
-        } catch (error) {
-            log.error(error, 'Failed to process twitter callback');
+                        ...(tweet.extended_entities?.media ?? []).map(
+                            mapTwitterMedia,
+                        ),
+                    ],
+                );
+            } catch (error) {
+                log.error(error, 'Failed to process twitter callback');
 
-            await replyNotFound(item.context);
-        }
+                await replyNotFound(item.context);
+            }
+        });
     }
 })();
