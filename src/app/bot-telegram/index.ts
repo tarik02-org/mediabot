@@ -3,9 +3,9 @@ import '../../env.js';
 import fastify from 'fastify';
 import { InputFile, webhookCallback } from 'grammy';
 import { InputMediaAnimation, InputMediaPhoto, InputMediaVideo } from 'grammy/types';
-import lodash from 'lodash';
 import * as nodePath from 'node:path';
 import { pathToFileURL } from 'node:url';
+import * as uuid from 'uuid';
 import { z } from 'zod';
 
 import { cache } from '../../cache.js';
@@ -145,7 +145,7 @@ telegram.on('inline_query', async ctx => {
         ctx.answerInlineQuery([
             {
                 type: 'photo',
-                id: lodash.uniqueId(),
+                id: uuid.v4(),
                 title: ctx.inlineQuery.query,
                 photo_file_id: clickToSendFileId,
                 reply_markup: {
