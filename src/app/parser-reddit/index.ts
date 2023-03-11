@@ -1,6 +1,6 @@
 import '../../env.js';
 
-import Ky from 'ky';
+import Got from 'got';
 import lodash from 'lodash';
 import { z } from 'zod';
 
@@ -8,14 +8,14 @@ import { processRequests } from '../../resolvers/lib.js';
 
 import { processor } from './api.js';
 
-const ky = Ky.extend({
+const got = Got.extend({
     headers: {
         Accept: 'application/json',
     },
 });
 
 const computeForLink = async (link: string): Promise<z.TypeOf<(typeof processor)['resultSchema']>> => {
-    const data = await ky.get(link, {
+    const data = await got.get(link, {
         searchParams: {
             raw_json: '1',
         },
