@@ -2,6 +2,7 @@ import Got from 'got';
 import { JSDOM } from 'jsdom';
 import { Cookie, CookieJar } from 'tough-cookie';
 import { z } from 'zod';
+
 import { Query } from './index.js';
 
 const USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0';
@@ -17,7 +18,7 @@ const DEFAULT_HEADERS = {
     'Referer': 'https://www.tiktok.com/',
     'Accept-Language': 'en-US,en;q=0.9,bs;q=0.8,sr;q=0.7,hr;q=0.6',
     'sec-gpc': '1',
-    'Range': 'bytes=0-'
+    'Range': 'bytes=0-',
 };
 
 export const downloadFromTiktok = async (query: Query) => {
@@ -27,24 +28,24 @@ export const downloadFromTiktok = async (query: Query) => {
     await cookieJar.setCookie(new Cookie({
         key: 'tt_webid',
         value: sessionId,
-        domain: 'www.tiktok.com'
+        domain: 'www.tiktok.com',
     }), 'https://www.tiktok.com/');
     await cookieJar.setCookie(new Cookie({
         key: 'tt_webid_v2',
         value: sessionId,
-        domain: 'www.tiktok.com'
+        domain: 'www.tiktok.com',
     }), 'https://www.tiktok.com/');
 
     const got = Got.extend({
-        cookieJar
+        cookieJar,
     });
 
     const dom = new JSDOM(
         await got(query.source, {
             headers: {
-                ...DEFAULT_HEADERS
-            }
-        }).text()
+                ...DEFAULT_HEADERS,
+            },
+        }).text(),
     );
 
     const data = z.object({
@@ -54,21 +55,21 @@ export const downloadFromTiktok = async (query: Query) => {
                     playAddr: z.string(),
                     width: z.number(),
                     height: z.number(),
-                    duration: z.number()
-                })
-            })
+                    duration: z.number(),
+                }),
+            }),
         ),
         SEO: z.object({
             metaParams: z.object({
                 title: z.string(),
                 description: z.string(),
-                canonicalHref: z.string()
-            })
-        })
+                canonicalHref: z.string(),
+            }),
+        }),
     }).parse(
         JSON.parse(
-            dom.window.document.querySelector<HTMLScriptElement>('script#SIGI_STATE')!.textContent!
-        )
+            dom.window.document.querySelector<HTMLScriptElement>('script#SIGI_STATE')!.textContent!,
+        ),
     );
 
     const module = Object.values(data.ItemModule)[ 0 ];
@@ -79,14 +80,14 @@ export const downloadFromTiktok = async (query: Query) => {
         video: {
             width: module.video.width,
             height: module.video.height,
-            duration: module.video.duration
+            duration: module.video.duration,
         },
 
         downloadVideo: async () => await got.get(module.video.playAddr, {
             headers: {
-                ...DEFAULT_HEADERS
+                ...DEFAULT_HEADERS,
             },
-            followRedirect: false
-        }).buffer()
+            followRedirect: false,
+        }).buffer(),
     };
 };

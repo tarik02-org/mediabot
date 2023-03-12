@@ -546,7 +546,31 @@ const spawn = async (fn: () => Promise<void>) => {
                             item.context,
                             item.result.title,
                             item.result.url,
-                            item.result.media,
+                            await Promise.all(item.result.media.map(async media => {
+                                const input = media.data.type === 'url'
+                                    ? media.data.url
+                                    : new InputFile(
+                                        (await redis.getBuffer(`${ redisPrefix }:${ media.data.ref }`))!,
+                                        media.data.name,
+                                    );
+
+                                switch (media.type) {
+                                    case 'photo':
+                                        return {
+                                            type: 'photo',
+                                            url: input,
+                                            size: media.size,
+                                        };
+
+                                    case 'video':
+                                        return {
+                                            type: 'video',
+                                            url: input,
+                                            size: media.size,
+                                            duration: media.duration,
+                                        };
+                                }
+                            })),
                         );
                         break;
 

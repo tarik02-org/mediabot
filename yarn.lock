@@ -437,6 +437,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/fluent-ffmpeg@npm:^2":
+  version: 2.1.21
+  resolution: "@types/fluent-ffmpeg@npm:2.1.21"
+  dependencies:
+    "@types/node": "*"
+  checksum: 412e29bf578a2619b6600a0c0977568b3e3c7dafb155e80a2743a5f2a8169d2e3654a6db526e7a35bd03c6437fb6f7542db5ca869b5f3b028438219ae933e593
+  languageName: node
+  linkType: hard
+
 "@types/http-cache-semantics@npm:^4.0.1":
   version: 4.0.1
   resolution: "@types/http-cache-semantics@npm:4.0.1"
@@ -550,6 +559,15 @@ __metadata:
   version: 7.3.13
   resolution: "@types/semver@npm:7.3.13"
   checksum: 00c0724d54757c2f4bc60b5032fe91cda6410e48689633d5f35ece8a0a66445e3e57fa1d6e07eb780f792e82ac542948ec4d0b76eb3484297b79bd18b8cf1cb0
+  languageName: node
+  linkType: hard
+
+"@types/stream-buffers@npm:^3":
+  version: 3.0.4
+  resolution: "@types/stream-buffers@npm:3.0.4"
+  dependencies:
+    "@types/node": "*"
+  checksum: 5b432b2bf963d612747b79ac317562888236d6a9ea14414fb055c24e7be9643b5e3c7b7470841fa82802aa1c1c0d752a4ba935bbc0cfb12de6b89f7e1dadee92
   languageName: node
   linkType: hard
 
@@ -958,6 +976,13 @@ __metadata:
   version: 2.0.1
   resolution: "arrify@npm:2.0.1"
   checksum: 067c4c1afd182806a82e4c1cb8acee16ab8b5284fbca1ce29408e6e91281c36bb5b612f6ddfbd40a0f7a7e0c75bf2696eb94c027f6e328d6e9c52465c98e4209
+  languageName: node
+  linkType: hard
+
+"async@npm:>=0.2.9":
+  version: 3.2.4
+  resolution: "async@npm:3.2.4"
+  checksum: 43d07459a4e1d09b84a20772414aa684ff4de085cbcaec6eea3c7a8f8150e8c62aa6cd4e699fe8ee93c3a5b324e777d34642531875a0817a35697522c1b02e89
   languageName: node
   linkType: hard
 
@@ -2305,6 +2330,16 @@ __metadata:
   version: 3.2.7
   resolution: "flatted@npm:3.2.7"
   checksum: 427633049d55bdb80201c68f7eb1cbd533e03eac541f97d3aecab8c5526f12a20ccecaeede08b57503e772c769e7f8680b37e8d482d1e5f8d7e2194687f9ea35
+  languageName: node
+  linkType: hard
+
+"fluent-ffmpeg@npm:^2.1.2":
+  version: 2.1.2
+  resolution: "fluent-ffmpeg@npm:2.1.2"
+  dependencies:
+    async: ">=0.2.9"
+    which: ^1.1.1
+  checksum: ab7ed909486298f33b991af051c38e40410ae5b03b0b6d33d0855636a0b56330ffe9efed6c7eedb00f1c6c713c795cbdb283f6f2216db925ae5e737a22c6a97f
   languageName: node
   linkType: hard
 
@@ -3811,6 +3846,7 @@ __metadata:
     "@tarik02/eslint-config-type-1": ^0.1.8
     "@tarik02/eslint-config-type-1-import": ^0.1.8
     "@total-typescript/ts-reset": ^0.3.7
+    "@types/fluent-ffmpeg": ^2
     "@types/imap": ^0.8.35
     "@types/imapflow": ^1.0.11
     "@types/jsdom": ^21
@@ -3818,6 +3854,7 @@ __metadata:
     "@types/luxon": ^3
     "@types/prompts": ^2
     "@types/qs": ^6.9.7
+    "@types/stream-buffers": ^3
     "@types/tough-cookie": ^4
     "@types/uuid": ^9
     chalk: ^5.2.0
@@ -3825,6 +3862,7 @@ __metadata:
     eslint: ^8.35.0
     execa: ^7.0.0
     fastify: ^4.14.1
+    fluent-ffmpeg: ^2.1.2
     googleapis: 105
     got: ^12.6.0
     grammy: ^1.14.1
@@ -3853,6 +3891,7 @@ __metadata:
     radash: ^10.7.1
     redlock: 5.0.0-beta.2
     sleep-promise: ^9.1.0
+    stream-buffers: ^3.0.2
     styleless-innertext: ^1.1.5
     tough-cookie: ^4.1.2
     ts-node: ^10.9.1
@@ -5507,6 +5546,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"stream-buffers@npm:^3.0.2":
+  version: 3.0.2
+  resolution: "stream-buffers@npm:3.0.2"
+  checksum: b09fdeea606e3113ebd0e07010ed0cf038608fa396130add9e45deaff5cc3ba845dc25c31ad24f8341f85907846344cb7c85f75ea52c6572e2ac646e9b6072d0
+  languageName: node
+  linkType: hard
+
 "string-width@npm:^1.0.2 || 2 || 3 || 4, string-width@npm:^4.2.3":
   version: 4.2.3
   resolution: "string-width@npm:4.2.3"
@@ -6185,6 +6231,17 @@ __metadata:
     has-tostringtag: ^1.0.0
     is-typed-array: ^1.1.10
   checksum: fe0178ca44c57699ca2c0e657b64eaa8d2db2372a4e2851184f568f98c478ae3dc3fdb5f7e46c384487046b0cf9e23241423242b277e03e8ba3dabc7c84c98ef
+  languageName: node
+  linkType: hard
+
+"which@npm:^1.1.1":
+  version: 1.3.1
+  resolution: "which@npm:1.3.1"
+  dependencies:
+    isexe: ^2.0.0
+  bin:
+    which: ./bin/which
+  checksum: f2e185c6242244b8426c9df1510e86629192d93c1a986a7d2a591f2c24869e7ffd03d6dac07ca863b2e4c06f59a4cc9916c585b72ee9fa1aa609d0124df15e04
   languageName: node
   linkType: hard
 

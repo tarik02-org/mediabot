@@ -1,12 +1,19 @@
 import '../../env.js';
 
+import ffmpeg from 'fluent-ffmpeg';
+import { contactcenterinsights } from 'googleapis/build/src/apis/contactcenterinsights/index.js';
 import Got from 'got';
 import lodash from 'lodash';
+import { WritableStreamBuffer } from 'stream-buffers';
+import * as uuid from 'uuid';
 import { z } from 'zod';
 
+import { redis, redisPrefix } from '../../redis.js';
 import { processRequests } from '../../resolvers/lib.js';
 
 import { processor } from './api.js';
+
+type Result = z.TypeOf<(typeof processor)['resultSchema']>;
 
 const got = Got.extend({
     headers: {
@@ -14,59 +21,235 @@ const got = Got.extend({
     },
 });
 
-const computeForLink = async (link: string): Promise<z.TypeOf<(typeof processor)['resultSchema']>> => {
+const computeForLink = async (link: string): Promise<Result> => {
     const data = await got.get(link, {
         searchParams: {
             raw_json: '1',
         },
     }).json();
 
-    const postData = z.object({
+    const rawPostData = lodash.get(data, '0.data.children.0.data', null);
+
+    const commonPostData = z.object({
         title: z.string(),
         permalink: z.string(),
-        media: z.optional(z.object({
-            reddit_video: z.object({
-                fallback_url: z.string(),
-                width: z.number(),
-                height: z.number(),
-                duration: z.number(),
-            }),
-        })),
         over_18: z.boolean(),
     }).parse(
-        lodash.get(data, '0.data.children.0.data', null),
+        rawPostData,
     );
 
-    const title = postData.title;
-    const url = `https://www.reddit.com${ postData.permalink }`;
+    const title = commonPostData.title;
+    const url = `https://www.reddit.com${ commonPostData.permalink }`;
 
-    if (postData.media) {
-        const video = postData.media.reddit_video;
+    {
+        const parsedPostData = z.object({
+            media: z.object({
+                reddit_video: z.object({
+                    dash_url: z.string(),
+                    width: z.number(),
+                    height: z.number(),
+                    duration: z.number(),
+                }),
+            }),
+        }).safeParse(
+            rawPostData,
+        );
 
-        return {
-            title,
-            url,
-            media: [
-                {
-                    type: 'video',
-                    url: video.fallback_url,
-                    size: {
-                        width: video.width,
-                        height: video.height,
+        if (parsedPostData.success) {
+            const postData = parsedPostData.data;
+
+            const outputStream = new WritableStreamBuffer({
+                initialSize: 1024 * 1024,
+                incrementAmount: 1024 * 1024,
+            });
+
+            ffmpeg(postData.media.reddit_video.dash_url)
+                .withOptions([
+                    '-c', 'copy',
+                    '-movflags', 'faststart+frag_keyframe+empty_moov',
+                ])
+                .outputFormat('mp4')
+                .output(outputStream, { end: true })
+                .run();
+
+            await new Promise((resolve, reject) => {
+                outputStream.addListener('finish', resolve);
+                outputStream.addListener('error', reject);
+            });
+
+            const contents = outputStream.getContents();
+            if (contents === false) {
+                throw new Error('Failed to get contents');
+            }
+
+            const ref = `reddit:video:${ uuid.v4() }`;
+            await redis.setex(
+                `${ redisPrefix }:${ ref }`, 120,
+                contents,
+            );
+
+            return {
+                title,
+                url,
+                media: [
+                    {
+                        type: 'video',
+                        data: {
+                            type: 'ref',
+                            ref,
+                            name: 'video.mp4',
+                        },
+                        duration: postData.media.reddit_video.duration,
+                        size: {
+                            width: postData.media.reddit_video.width,
+                            height: postData.media.reddit_video.height,
+                        },
                     },
-                    duration: video.duration,
-                },
-            ],
-        };
+                ],
+            };
+        }
     }
 
-    throw new Error();
+    {
+        const parsedPostData = z.object({
+            media_metadata: z.record(
+                z.string(),
+                z.union([
+                    z.object({
+                        e: z.literal('Image'),
+                        s: z.object({
+                            u: z.string(),
+                            x: z.number(),
+                            y: z.number(),
+                        }),
+                        m: z.string(),
+                    }),
+                    z.object({
+                        e: z.literal('AnimatedImage'),
+                        s: z.intersection(
+                            z.union([
+                                z.object({
+                                    mp4: z.string(),
+                                }),
+                                z.object({
+                                    gif: z.string(),
+                                }),
+                                z.object({
+                                    u: z.string(),
+                                }),
+                            ]),
+                            z.object({
+                                x: z.number(),
+                                y: z.number(),
+                            }),
+                        ),
+                        m: z.string(),
+                    }),
+                ]),
+            ),
+            gallery_data: z.object({
+                items: z.array(
+                    z.object({
+                        media_id: z.string(),
+                    }),
+                ),
+            }),
+        }).safeParse(
+            rawPostData,
+        );
+
+        if (parsedPostData.success) {
+            const postData = parsedPostData.data;
+
+            return {
+                title,
+                url,
+
+                media: postData.gallery_data.items.map((item): Result['media'][number] => {
+                    const metadata = postData.media_metadata[ item.media_id ];
+
+                    switch (metadata.e) {
+                        case 'Image':
+                            return {
+                                type: 'photo',
+                                data: {
+                                    type: 'url',
+                                    url: metadata.s.u,
+                                },
+                                size: {
+                                    width: metadata.s.x,
+                                    height: metadata.s.y,
+                                },
+                            };
+
+                        case 'AnimatedImage':
+                            if ('mp4' in metadata.s) {
+                                return {
+                                    type: 'video',
+                                    data: {
+                                        type: 'url',
+                                        url: metadata.s.mp4,
+                                    },
+                                    size: {
+                                        width: metadata.s.x,
+                                        height: metadata.s.y,
+                                    },
+                                };
+                            } else {
+                                return {
+                                    type: 'photo',
+                                    data: {
+                                        type: 'url',
+                                        url: 'u' in metadata.s ? metadata.s.u : metadata.s.gif,
+                                    },
+                                    size: {
+                                        width: metadata.s.x,
+                                        height: metadata.s.y,
+                                    },
+                                };
+                            }
+                    }
+                }),
+            };
+        }
+    }
+
+    {
+        const parsedPostData = z.object({
+            is_reddit_media_domain: z.literal(true),
+            is_video: z.literal(false),
+            url: z.string(),
+        }).safeParse(
+            rawPostData,
+        );
+
+        if (parsedPostData.success) {
+            const postData = parsedPostData.data;
+
+            return {
+                title,
+                url,
+                media: [
+                    {
+                        type: 'photo',
+                        data: {
+                            type: 'url',
+                            url: postData.url,
+                        },
+                    },
+                ],
+            };
+        }
+    }
+
+    throw new Error('Unhandled post type');
 };
 
 await processRequests(
     processor,
     ({ link }) => computeForLink(link),
     {
+        cacheTimeout: 5,
         concurrency: 10,
     },
 );
