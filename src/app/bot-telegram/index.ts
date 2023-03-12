@@ -578,22 +578,48 @@ const spawn = async (fn: () => Promise<void>) => {
                         break;
 
                     case 'tiktok':
-                        await processDefaultMediaCallback(
-                            item.context,
-                            item.result.title,
-                            item.result.url,
-                            [
-                                {
-                                    type: 'video',
-                                    url: new InputFile(
-                                        (await redis.getBuffer(`${ redisPrefix }:${ item.result.video.ref }`))!,
-                                        'tiktok.mp4',
-                                    ),
-                                    size: item.result.video.size,
-                                    duration: item.result.video.duration,
-                                },
-                            ],
-                        );
+                        switch (item.result.media.type) {
+                            case 'photos':
+                                await processDefaultMediaCallback(
+                                    item.context,
+                                    item.result.title,
+                                    item.result.url,
+                                    await Promise.all(item.result.media.items.map(async media => ({
+                                        type: 'photo',
+                                        url: media.data.type === 'url'
+                                            ? media.data.url
+                                            : new InputFile(
+                                                (await redis.getBuffer(`${ redisPrefix }:${ media.data.ref }`))!,
+                                                media.data.name,
+                                            ),
+                                        size: media.size,
+                                    }))),
+                                );
+                                break;
+
+                            case 'video': {
+                                const data = item.result.media.data.type === 'url'
+                                    ? item.result.media.data.url
+                                    : new InputFile(
+                                        (await redis.getBuffer(`${ redisPrefix }:${ item.result.media.data.ref }`))!,
+                                        item.result.media.data.name,
+                                    );
+
+                                await processDefaultMediaCallback(
+                                    item.context,
+                                    item.result.title,
+                                    item.result.url,
+                                    [
+                                        {
+                                            type: 'video',
+                                            url: data,
+                                            size: item.result.media.size,
+                                            duration: item.result.media.duration,
+                                        },
+                                    ],
+                                );
+                            }
+                        }
                         break;
 
                     case 'twitter': {

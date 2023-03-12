@@ -16,7 +16,7 @@ export type Result = z.TypeOf<(typeof processor)['resultSchema']>;
 
 await processRequests(
     processor,
-    async query => {
+    async (query): Promise<Result> => {
         const [
             musicaldownResult,
             tiktokResult,
@@ -33,57 +33,115 @@ await processRequests(
             log.error(tiktokResult.reason, `Download from Tiktok failed for ${ query.source }`);
         }
 
-        if (musicaldownResult.status === 'fulfilled' && tiktokResult.status === 'fulfilled') {
-            const videoId = uuid.v4();
+        if (
+            musicaldownResult.status === 'fulfilled' &&
+            musicaldownResult.value !== null &&
+            tiktokResult.status === 'fulfilled'
+        ) {
+            const ref = `tiktok:video:${ uuid.v4() }`;
             const videoData = await musicaldownResult.value.downloadVideo();
 
-            await redis.setex(`${ redisPrefix }:tiktok:video:${ videoId }`, 120, videoData);
+            await redis.setex(`${ redisPrefix }:${ ref }`, 120, videoData);
 
             return {
                 title: tiktokResult.value.title,
                 url: musicaldownResult.value.url,
-                video: {
-                    ref: `tiktok:video:${ videoId }`,
-                    width: tiktokResult.value.video.width,
-                    height: tiktokResult.value.video.height,
-                    duration: tiktokResult.value.video.duration,
+                media: {
+                    type: 'video',
+                    data: {
+                        type: 'ref',
+                        ref,
+                        name: 'video.mp4',
+                    },
+                    ...tiktokResult.value.type === 'video'
+                        ? {
+                            width: tiktokResult.value.video.width,
+                            height: tiktokResult.value.video.height,
+                            duration: tiktokResult.value.video.duration,
+                        }
+                        : {},
                 },
             };
         }
 
-        if (musicaldownResult.status === 'fulfilled') {
-            const videoId = uuid.v4();
+        if (
+            musicaldownResult.status === 'fulfilled' &&
+            musicaldownResult.value !== null
+        ) {
+            const ref = `tiktok:video:${ uuid.v4() }`;
             const videoData = await musicaldownResult.value.downloadVideo();
 
-            await redis.setex(`${ redisPrefix }:tiktok:video:${ videoId }`, 120, videoData);
+            await redis.setex(`${ redisPrefix }:${ ref }`, 120, videoData);
 
             return {
                 title: musicaldownResult.value.title,
                 url: musicaldownResult.value.url,
-                video: {
-                    ref: `tiktok:video:${ videoId }`,
+                media: {
+                    type: 'video',
+                    data: {
+                        type: 'ref',
+                        ref,
+                        name: 'video.mp4',
+                    },
                 },
             };
         }
 
         if (tiktokResult.status === 'fulfilled') {
-            const videoId = uuid.v4();
-            const videoData = await tiktokResult.value.downloadVideo();
+            switch (tiktokResult.value.type) {
+                case 'images': {
+                    return {
+                        title: tiktokResult.value.title,
+                        url: tiktokResult.value.url,
+                        media: {
+                            type: 'photos',
+                            items: await Promise.all(tiktokResult.value.images.map(async image => {
+                                const data = await image.download();
+                                const ref = `tiktok:image:${ uuid.v4() }`;
 
-            await redis.setex(`${ redisPrefix }:tiktok:video:${ videoId }`, 120, videoData);
+                                await redis.setex(`${ redisPrefix }:${ ref }`, 120, data);
 
-            return {
-                title: tiktokResult.value.title,
-                url: tiktokResult.value.url,
-                video: {
-                    ref: `tiktok:video:${ videoId }`,
-                    size: {
-                        width: tiktokResult.value.video.width,
-                        height: tiktokResult.value.video.height,
-                    },
-                    duration: tiktokResult.value.video.duration,
-                },
-            };
+                                return {
+                                    data: {
+                                        type: 'ref',
+                                        ref,
+                                        name: 'image.jpeg',
+                                    },
+                                    size: {
+                                        width: image.width,
+                                        height: image.height,
+                                    },
+                                };
+                            })),
+                        },
+                    };
+                }
+
+                case 'video': {
+                    const ref = `tiktok:video:${ uuid.v4() }`;
+                    const videoData = await tiktokResult.value.downloadVideo();
+
+                    await redis.setex(`${ redisPrefix }:${ ref }`, 120, videoData);
+
+                    return {
+                        title: tiktokResult.value.title,
+                        url: tiktokResult.value.url,
+                        media: {
+                            type: 'video',
+                            data: {
+                                type: 'ref',
+                                ref,
+                                name: 'video.mp4',
+                            },
+                            size: {
+                                width: tiktokResult.value.video.width,
+                                height: tiktokResult.value.video.height,
+                            },
+                            duration: tiktokResult.value.video.duration,
+                        },
+                    };
+                }
+            }
         }
 
         throw new Error(

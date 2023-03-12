@@ -50,14 +50,27 @@ export const downloadFromTiktok = async (query: Query) => {
 
     const data = z.object({
         ItemModule: z.record(
-            z.object({
-                video: z.object({
-                    playAddr: z.string(),
-                    width: z.number(),
-                    height: z.number(),
-                    duration: z.number(),
+            z.union([
+                z.object({
+                    imagePost: z.object({
+                        images: z.array(z.object({
+                            imageURL: z.object({
+                                urlList: z.array(z.string()),
+                            }),
+                            imageWidth: z.number(),
+                            imageHeight: z.number(),
+                        })),
+                    }),
                 }),
-            }),
+                z.object({
+                    video: z.object({
+                        playAddr: z.string(),
+                        width: z.number(),
+                        height: z.number(),
+                        duration: z.number(),
+                    }),
+                }),
+            ]),
         ),
         SEO: z.object({
             metaParams: z.object({
@@ -74,20 +87,48 @@ export const downloadFromTiktok = async (query: Query) => {
 
     const module = Object.values(data.ItemModule)[ 0 ];
 
-    return {
-        title: data.SEO.metaParams.title,
-        url: data.SEO.metaParams.canonicalHref,
-        video: {
-            width: module.video.width,
-            height: module.video.height,
-            duration: module.video.duration,
-        },
+    if ('imagePost' in module) {
+        return {
+            title: data.SEO.metaParams.title,
+            url: data.SEO.metaParams.canonicalHref,
 
-        downloadVideo: async () => await got.get(module.video.playAddr, {
-            headers: {
-                ...DEFAULT_HEADERS,
+            type: 'images',
+
+            images: module.imagePost.images.map(image => ({
+                width: image.imageWidth,
+                height: image.imageHeight,
+
+                download: async () => await got.get(image.imageURL.urlList[ 0 ], {
+                    headers: {
+                        ...DEFAULT_HEADERS,
+                    },
+                    followRedirect: false,
+                }).buffer(),
+            })),
+        } as const;
+    }
+
+    if ('video' in module) {
+        return {
+            title: data.SEO.metaParams.title,
+            url: data.SEO.metaParams.canonicalHref,
+
+            type: 'video',
+
+            video: {
+                width: module.video.width,
+                height: module.video.height,
+                duration: module.video.duration,
             },
-            followRedirect: false,
-        }).buffer(),
-    };
+
+            downloadVideo: async () => await got.get(module.video.playAddr, {
+                headers: {
+                    ...DEFAULT_HEADERS,
+                },
+                followRedirect: false,
+            }).buffer(),
+        } as const;
+    }
+
+    throw new Error('Unknown module type');
 };

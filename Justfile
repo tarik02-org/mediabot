@@ -28,3 +28,12 @@ dev-parser-reddit: build-dev
         --volume $(pwd):/app \
         --env MEDIABOT_WORKDIR=/app/.local/workdir/parser-reddit \
         {{ imageName }}/dev yarn app:parser-reddit
+
+dev-parser-tiktok: build-dev
+    {{ containerEngine }} run \
+        -it \
+        --rm \
+        --network host \
+        --volume $(pwd):/app \
+        --env MEDIABOT_WORKDIR=/app/.local/workdir/parser-tiktok \
+        {{ imageName }}/dev yarn app:parser-tiktok
