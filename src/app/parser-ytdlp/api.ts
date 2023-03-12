@@ -71,8 +71,17 @@ export const ninegagMatcher = createRequestMatcher(
     processor,
 );
 
+export const anyLinkMatcher = createRequestMatcher(
+    /(?:https?:\/\/)?(?:[\w\-.]+)\/(?:[^\s\n]+)/,
+    match => ({
+        key: `ytdlp/any-link/${ match[ 0 ] }`,
+        source: match[ 0 ],
+    }),
+    processor,
+);
+
 export const matchers = [
-    youtubeMatcher,
+    // youtubeMatcher,
     youtubeShortsMatcher,
     twitchClipMatcher,
     ninegagMatcher,

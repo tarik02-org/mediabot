@@ -47,7 +47,7 @@ export const processor = createRequestProcessor(
 );
 
 export const matcher = createRequestMatcher(
-    /(?:https?:\/\/)?(?:www\.)?reddit\.com\/+(?<path>(r|user)\/([^/]+)\/comments\/([^/]+)\/([^/\s?]+))\/?(\?[a-zA-Z0-9_&=]+)?/,
+    /(?:https?:\/\/)?(?:www\.)?reddit\.com\/+(?<path>(r|user)\/([^/]+)\/comments\/([^/]+)(?:\/[^/\s?]+)?)\/?(\?[a-zA-Z0-9_&=]+)?/,
     match => ({
         key: match.groups!.path,
         link: `https://www.reddit.com/${ match.groups!.path }.json`,

@@ -32,8 +32,6 @@ await processRequests(
 
         const process = await execa(env.YTDLP_PATH, [
             '--no-playlist',
-            // '--dump-single-json',
-            // '--no-simulate',
             '--print-json',
             '--no-progress',
             '-f', '(b[ext=mp4])[filesize<50M]/(bv[ext=mp4]+ba[ext=m4a])[filesize<50M]/b/bv',

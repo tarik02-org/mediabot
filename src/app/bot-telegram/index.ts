@@ -202,7 +202,10 @@ telegram.on('message', async ctx => {
             };
 
     try {
-        for (const matcher of matchers) {
+        for (const matcher of [
+            ...matchers,
+            ...isImplicit ? [] : [ ytdlpResolver.anyLinkMatcher ],
+        ]) {
             for (const regex of matcher.regex) {
                 const match = query.match(regex);
                 if (match === null) {
@@ -675,6 +678,11 @@ const spawn = async (fn: () => Promise<void>) => {
         log.debug(item, 'Processing twitter callback');
 
         spawn(async () => {
+            if ('error' in item) {
+                await replyNotFound(item.context);
+                return;
+            }
+
             const { tweet } = item.context;
 
             try {

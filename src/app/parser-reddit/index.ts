@@ -1,7 +1,6 @@
 import '../../env.js';
 
 import ffmpeg from 'fluent-ffmpeg';
-import { contactcenterinsights } from 'googleapis/build/src/apis/contactcenterinsights/index.js';
 import Got from 'got';
 import lodash from 'lodash';
 import { WritableStreamBuffer } from 'stream-buffers';
@@ -235,6 +234,75 @@ const computeForLink = async (link: string): Promise<Result> => {
                         data: {
                             type: 'url',
                             url: postData.url,
+                        },
+                    },
+                ],
+            };
+        }
+    }
+
+    {
+        const parsedPostData = z.object({
+            preview: z.object({
+                reddit_video_preview: z.object({
+                    dash_url: z.string(),
+                    width: z.number(),
+                    height: z.number(),
+                    duration: z.number(),
+                }),
+            }),
+        }).safeParse(
+            rawPostData,
+        );
+
+        if (parsedPostData.success) {
+            const postData = parsedPostData.data;
+
+            const outputStream = new WritableStreamBuffer({
+                initialSize: 1024 * 1024,
+                incrementAmount: 1024 * 1024,
+            });
+
+            ffmpeg(postData.preview.reddit_video_preview.dash_url)
+                .withOptions([
+                    '-c', 'copy',
+                    '-movflags', 'faststart+frag_keyframe+empty_moov',
+                ])
+                .outputFormat('mp4')
+                .output(outputStream, { end: true })
+                .run();
+
+            await new Promise((resolve, reject) => {
+                outputStream.addListener('finish', resolve);
+                outputStream.addListener('error', reject);
+            });
+
+            const contents = outputStream.getContents();
+            if (contents === false) {
+                throw new Error('Failed to get contents');
+            }
+
+            const ref = `reddit:video:${ uuid.v4() }`;
+            await redis.setex(
+                `${ redisPrefix }:${ ref }`, 120,
+                contents,
+            );
+
+            return {
+                title,
+                url,
+                media: [
+                    {
+                        type: 'video',
+                        data: {
+                            type: 'ref',
+                            ref,
+                            name: 'video.mp4',
+                        },
+                        duration: postData.preview.reddit_video_preview.duration,
+                        size: {
+                            width: postData.preview.reddit_video_preview.width,
+                            height: postData.preview.reddit_video_preview.height,
                         },
                     },
                 ],
