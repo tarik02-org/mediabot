@@ -26,7 +26,7 @@ export const processor = createRequestProcessor(
 );
 
 export const matcher = createRequestMatcher(
-    /(?:https?:\/\/)?(?:www\.)?(?<link>instagram\.com\/(?<key>stories\/[\w\-.]+\/\d+|reel\/[\w\-.]+|p\/\w+))/,
+    /(?:https?:\/\/)?(?:www\.)?(?<link>instagram\.com\/(?<key>stories\/[\w\-.]+\/\d+|reel\/[\w\-.]+|p\/[\w\-.]+))/,
     match => ({
         key: match.groups!.key,
         link: `https://www.${ match.groups!.link }`,
