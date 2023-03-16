@@ -202,6 +202,10 @@ radash.defer(async defer => {
                     `https://i.instagram.com/api/v1/media/${ postData.rootView.props.media_id }/info/`,
                 );
 
+                log.debug({
+                    data
+                }, 'media data');
+
                 rawMedia.push(
                     ...data.items,
                 );
