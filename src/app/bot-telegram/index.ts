@@ -4,6 +4,7 @@ import Sentry from '@sentry/core';
 import fastify from 'fastify';
 import { InputFile, webhookCallback } from 'grammy';
 import { InputMediaAnimation, InputMediaPhoto, InputMediaVideo } from 'grammy/types';
+import lodash from 'lodash';
 import * as nodePath from 'node:path';
 import { pathToFileURL } from 'node:url';
 import * as uuid from 'uuid';
@@ -734,7 +735,11 @@ const spawn = async (fn: () => Promise<void>) => {
                             },
                         },
 
-                        ...(tweet.extended_entities?.media ?? []).map(
+                        ...lodash.get(tweet, 'extended_entities.media', []).map(
+                            mapTwitterMedia,
+                        ),
+
+                        ...lodash.get(tweet, 'quoted_status.extended_entities.media', []).map(
                             mapTwitterMedia,
                         ),
                     ],

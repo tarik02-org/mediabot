@@ -46,3 +46,21 @@ dev-parser-instagram: build-dev
         --volume $(pwd):/app \
         --env MEDIABOT_WORKDIR=/app/.local/workdir/parser-instagram \
         {{ imageName }}/dev yarn app:parser-instagram:dev
+
+dev-parser-twitter: build-dev
+    {{ containerEngine }} run \
+        -it \
+        --rm \
+        --network host \
+        --volume $(pwd):/app \
+        --env MEDIABOT_WORKDIR=/app/.local/workdir/parser-twitter \
+        {{ imageName }}/dev yarn app:parser-twitter:dev
+
+dev-render: build-dev
+    {{ containerEngine }} run \
+        -it \
+        --rm \
+        --network host \
+        --volume $(pwd):/app \
+        --env MEDIABOT_WORKDIR=/app/.local/workdir/render \
+        {{ imageName }}/dev yarn app:render:dev
