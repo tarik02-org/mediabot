@@ -473,7 +473,10 @@ const processDefaultMediaCallback = async (
                     let file = media.url;
 
                     if (typeof file !== 'string') {
-                        const temporaryMessage = await telegram.api.sendVideo(env.TEMPORARY_CHAT_ID, file);
+                        const temporaryMessage = await telegram.api.sendVideo(env.TEMPORARY_CHAT_ID, file, {
+                            ...media.size,
+                            supports_streaming: true,
+                        });
 
                         telegram.api.deleteMessage(env.TEMPORARY_CHAT_ID, temporaryMessage.message_id).catch(
                             error => log.error(error, 'Failed to delete temporary message'),
@@ -481,6 +484,8 @@ const processDefaultMediaCallback = async (
 
                         file = temporaryMessage.video.file_id;
                     }
+
+                    log.info(media.size);
 
                     await telegram.api.editMessageMediaInline(context.inlineMessageId, {
                         type: 'video',

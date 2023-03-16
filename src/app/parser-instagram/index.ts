@@ -119,6 +119,26 @@ radash.defer(async defer => {
             link,
         }, 'Processing link');
 
+        let graphQlResponse: any = null;
+
+        page.on('response', async response => {
+            log.debug({
+                url: response.url(),
+            }, 'Response received');
+
+            if ((new URL(response.url())).pathname.match(/^\/graphql\/query\/?$/)) {
+                const json = await response.json();
+
+                log.debug({
+                    json,
+                }, 'graph ql response');
+
+                if (graphQlResponse === null) {
+                    graphQlResponse = json;
+                }
+            }
+        });
+
         await page.goto(link, {
             waitUntil: 'networkidle2',
         });
@@ -160,9 +180,10 @@ radash.defer(async defer => {
 
         let title = postData?.meta.title ?? null;
         let url: string | null = null;
+        const media: any[] = [];
 
         switch (true) {
-            case !!postData: {
+            case !!lodash.get(postData, 'rootView.props.media_id'): {
                 url = `https://www.instagram.com${ postData.url }`;
 
                 const data = await page.evaluate(
@@ -187,7 +208,7 @@ radash.defer(async defer => {
                 break;
             }
 
-            case !!storyData: {
+            case !!lodash.get(storyData, 'rootView.props.user.id'): {
                 url = `https://www.instagram.com${ storyData.url }`;
 
                 const userId = storyData.rootView.props.user.id;
@@ -221,12 +242,50 @@ radash.defer(async defer => {
                 break;
             }
 
+            case !!lodash.get(graphQlResponse, 'data.xdt_api__v1__media__shortcode__web_info.items'): {
+                const { items } = graphQlResponse.data.xdt_api__v1__media__shortcode__web_info;
+                title = items[ 0 ].caption.text;
+
+                rawMedia.push(...items);
+                break;
+            }
+
+            case !!lodash.get(graphQlResponse, 'data.shortcode_media'): {
+                const media = graphQlResponse.data.shortcode_media;
+
+                const items = media.edge_sidecar_to_children?.edges.map((edge: any) => edge.node) || [ media ];
+                title = media.edge_media_to_caption.edges[ 0 ].node.text;
+
+                for (const item of items) {
+                    switch (true) {
+                        case item.is_video:
+                            // item.dimensions.width
+                            // item.dimensions.height
+                            // item.video_duration
+                            // item.video_url
+                            media.push({
+                                type: 'video',
+                                url: item.video_url,
+                            });
+                            break;
+
+                        default:
+                            // item.dimensions.width
+                            // item.dimensions.height
+                            media.push({
+                                type: 'photo',
+                                url: item.display_url,
+                            });
+                            break;
+                    }
+                }
+                break;
+            }
+
             default: {
                 throw new Error('Unhandled page type');
             }
         }
-
-        const media: any[] = [];
 
         const processMedia = (item: any) => {
             if (item.video_versions) {

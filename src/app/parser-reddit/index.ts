@@ -7,6 +7,7 @@ import { WritableStreamBuffer } from 'stream-buffers';
 import * as uuid from 'uuid';
 import { z } from 'zod';
 
+import { log } from '../../log.js';
 import { redis, redisPrefix } from '../../redis.js';
 import { processRequests } from '../../resolvers/lib.js';
 
@@ -270,6 +271,9 @@ const computeForLink = async (link: string): Promise<Result> => {
                 ])
                 .outputFormat('mp4')
                 .output(outputStream, { end: true })
+                .on('error', err => {
+                    log.error(err, 'Failed to convert video');
+                })
                 .run();
 
             await new Promise((resolve, reject) => {
@@ -317,7 +321,7 @@ await processRequests(
     processor,
     ({ link }) => computeForLink(link),
     {
-        cacheTimeout: 5,
+        cacheTimeout: 60,
         concurrency: 10,
     },
 );
