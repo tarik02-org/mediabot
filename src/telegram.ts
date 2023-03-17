@@ -1,10 +1,18 @@
 import { Bot } from 'grammy';
 import { z } from 'zod';
 
+const env = z.object({
+    BOT_TOKEN: z.string(),
+    TELEGRAM_API_ROOT: z.string().optional(),
+}).parse(
+    process.env,
+);
+
 export const telegram = new Bot(
-    z.object({
-        BOT_TOKEN: z.string(),
-    }).parse(
-        process.env,
-    ).BOT_TOKEN,
+    env.BOT_TOKEN,
+    {
+        client: {
+            apiRoot: env.TELEGRAM_API_ROOT,
+        },
+    },
 );
