@@ -1,3 +1,5 @@
+import '../../env.js';
+
 import { z } from 'zod';
 
 export const env = z.intersection(

@@ -5,5 +5,8 @@
 !.yarn/sdks
 !.yarn/versions
 
+.vscode-server
+.local
+.config
 node_modules
 .env

@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "parser-reddit.ts",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}/src/app/parser-reddit/index.ts",
+            "runtimeExecutable": "node",
+            "runtimeArgs": [
+                "--experimental-specifier-resolution=node",
+                "--loader=ts-node/esm"
+            ],
+            "console": "integratedTerminal"
+        }
+    ]
+}

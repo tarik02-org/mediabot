@@ -1,66 +1,54 @@
-imageName := "mediabot"
-containerEngine := "podman"
+root := "$(pwd)"
 
-build-dev:
-    {{ containerEngine }} build . --target dev --tag {{ imageName }}/dev
+dev-bot-telegram:
+    #!/usr/bin/env bash
+    export MEDIABOT_WORKDIR="{{ root }}/.local/workdir/bot-telegram"
+    export SERVICE_NAME="tg"
+    export DATABASE_URL="mysql://root:root@mysql:3306/mediabot"
+    export REDIS_URL="redis://redis"
 
-build-app:
-    {{ containerEngine }} build . --target app --tag {{ imageName }}/app
+    mkdir -p $MEDIABOT_WORKDIR
+    yarn app:bot-telegram:dev
 
-dev: build-dev
-    {{ containerEngine }} run -it --rm --network host --volume $(pwd):/app {{ imageName }}/dev bash
+dev-parser-reddit:
+    #!/usr/bin/env bash
+    export MEDIABOT_WORKDIR={{ root }}/.local/workdir/parser-reddit
 
-dev-bot-telegram: build-dev
-    {{ containerEngine }} run \
-        -it \
-        --rm \
-        --network host \
-        --volume $(pwd):/app \
-        --env MEDIABOT_WORKDIR=/app/.local/workdir/bot-telegram \
-        --env SERVICE_NAME=tg \
-        {{ imageName }}/dev yarn app:bot-telegram:dev
+    mkdir -p $MEDIABOT_WORKDIR
+    yarn app:parser-reddit:dev
 
-dev-parser-reddit: build-dev
-    {{ containerEngine }} run \
-        -it \
-        --rm \
-        --network host \
-        --volume $(pwd):/app \
-        --env MEDIABOT_WORKDIR=/app/.local/workdir/parser-reddit \
-        {{ imageName }}/dev yarn app:parser-reddit:dev
+dev-parser-tiktok:
+    #!/usr/bin/env bash
+    export MEDIABOT_WORKDIR={{ root }}/.local/workdir/parser-tiktok \
 
-dev-parser-tiktok: build-dev
-    {{ containerEngine }} run \
-        -it \
-        --rm \
-        --network host \
-        --volume $(pwd):/app \
-        --env MEDIABOT_WORKDIR=/app/.local/workdir/parser-tiktok \
-        {{ imageName }}/dev yarn app:parser-tiktok:dev
+    mkdir -p $MEDIABOT_WORKDIR
+    yarn app:parser-tiktok:dev
 
-dev-parser-instagram: build-dev
-    {{ containerEngine }} run \
-        -it \
-        --rm \
-        --network host \
-        --volume $(pwd):/app \
-        --env MEDIABOT_WORKDIR=/app/.local/workdir/parser-instagram \
-        {{ imageName }}/dev yarn app:parser-instagram:dev
+dev-parser-instagram:
+    #!/usr/bin/env bash
+    export MEDIABOT_WORKDIR={{ root }}/.local/workdir/parser-instagram
 
-dev-parser-twitter: build-dev
-    {{ containerEngine }} run \
-        -it \
-        --rm \
-        --network host \
-        --volume $(pwd):/app \
-        --env MEDIABOT_WORKDIR=/app/.local/workdir/parser-twitter \
-        {{ imageName }}/dev yarn app:parser-twitter:dev
+    mkdir -p $MEDIABOT_WORKDIR
+    yarn app:parser-instagram:dev
 
-dev-render: build-dev
-    {{ containerEngine }} run \
-        -it \
-        --rm \
-        --network host \
-        --volume $(pwd):/app \
-        --env MEDIABOT_WORKDIR=/app/.local/workdir/render \
-        {{ imageName }}/dev yarn app:render:dev
+dev-parser-twitter:
+    #!/usr/bin/env bash
+    export MEDIABOT_WORKDIR={{ root }}/.local/workdir/parser-twitter
+
+    mkdir -p $MEDIABOT_WORKDIR
+    yarn app:parser-twitter:dev
+
+dev-parser-ytdlp:
+    #!/usr/bin/env bash
+    export MEDIABOT_WORKDIR={{ root }}/.local/workdir/parser-ytdlp
+    export YTDLP_PATH="yt-dlp"
+
+    mkdir -p $MEDIABOT_WORKDIR
+    yarn app:parser-ytdlp:dev
+
+dev-render:
+    #!/usr/bin/env bash
+    export MEDIABOT_WORKDIR={{ root }}/.local/workdir/render
+
+    mkdir -p $MEDIABOT_WORKDIR
+    yarn app:render:dev

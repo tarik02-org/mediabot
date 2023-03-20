@@ -1,0 +1,32 @@
+{
+    "dockerComposeFile": ["../compose.yaml"],
+    "service": "app",
+    "workspaceFolder": "/app",
+    "shutdownAction": "stopCompose",
+
+    "remoteEnv": {
+        "DATABASE_URL": "mysql://root:root@mysql:3306/mediabot",
+        "REDIS_URL": "redis://redis",
+        "REDIS_PREFIX": "mediabot:"
+    },
+
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {
+            "version": "latest"
+        },
+        "ghcr.io/guiyomh/features/just:0": {
+            "version": "latest"
+        }
+    },
+
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "dbaeumer.vscode-eslint"
+            ]
+        }
+    },
+
+    "containerUser": "root",
+    "remoteUser": "root"
+}

@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Containerfile
+      target: dev
+    volumes:
+    - .:/app
+    command: /bin/sh -c "while sleep 1000; do :; done"
+
+  redis:
+    image: docker.io/library/redis:5-alpine
+
+  mysql:
+    image: docker.io/library/mariadb:10.11.2-jammy
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+    volumes:
+    - .local/mysql:/var/lib/mysql
