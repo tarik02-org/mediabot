@@ -66,6 +66,13 @@ RUN fc-cache -f -v
 
 FROM runtime AS dev
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ssh \
+        git \
+        && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 
