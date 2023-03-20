@@ -21,6 +21,43 @@ const got = Got.extend({
     },
 });
 
+const downloadVideoWithFfmpeg = async (url: string): Promise<Buffer> => await new Promise<Buffer>((resolve, reject) => {
+    const outputStream = new WritableStreamBuffer({
+        initialSize: 1024 * 1024,
+        incrementAmount: 1024 * 1024,
+    });
+
+    ffmpeg(url)
+        .withOptions([
+            '-c', 'copy',
+            '-movflags', 'faststart+frag_keyframe+empty_moov',
+        ])
+        .outputFormat('mp4')
+        .on('error', (err, stdout, stderr) => {
+            log.debug({
+                err,
+                stdout,
+                stderr,
+            }, 'Failed to convert video');
+
+            reject(err);
+        })
+        .on('end', (stdout, stderr) => {
+            log.debug({
+                stdout,
+                stderr,
+            }, 'Converted video');
+
+            const contents = outputStream.getContents();
+            if (contents === false) {
+                reject(new Error('Failed to get contents'));
+            } else {
+                resolve(contents);
+            }
+        })
+        .pipe(outputStream, { end: true });
+});
+
 const computeForLink = async (link: string): Promise<Result> => {
     const data = await got.get(link, {
         searchParams: {
@@ -58,29 +95,9 @@ const computeForLink = async (link: string): Promise<Result> => {
         if (parsedPostData.success) {
             const postData = parsedPostData.data;
 
-            const outputStream = new WritableStreamBuffer({
-                initialSize: 1024 * 1024,
-                incrementAmount: 1024 * 1024,
-            });
-
-            ffmpeg(postData.media.reddit_video.dash_url)
-                .withOptions([
-                    '-c', 'copy',
-                    '-movflags', 'faststart+frag_keyframe+empty_moov',
-                ])
-                .outputFormat('mp4')
-                .output(outputStream, { end: true })
-                .run();
-
-            await new Promise((resolve, reject) => {
-                outputStream.addListener('finish', resolve);
-                outputStream.addListener('error', reject);
-            });
-
-            const contents = outputStream.getContents();
-            if (contents === false) {
-                throw new Error('Failed to get contents');
-            }
+            const contents = await downloadVideoWithFfmpeg(
+                postData.media.reddit_video.dash_url,
+            );
 
             const ref = `reddit:video:${ uuid.v4() }`;
             await redis.setex(
@@ -259,32 +276,9 @@ const computeForLink = async (link: string): Promise<Result> => {
         if (parsedPostData.success) {
             const postData = parsedPostData.data;
 
-            const outputStream = new WritableStreamBuffer({
-                initialSize: 1024 * 1024,
-                incrementAmount: 1024 * 1024,
-            });
-
-            ffmpeg(postData.preview.reddit_video_preview.dash_url)
-                .withOptions([
-                    '-c', 'copy',
-                    '-movflags', 'faststart+frag_keyframe+empty_moov',
-                ])
-                .outputFormat('mp4')
-                .output(outputStream, { end: true })
-                .on('error', err => {
-                    log.error(err, 'Failed to convert video');
-                })
-                .run();
-
-            await new Promise((resolve, reject) => {
-                outputStream.addListener('finish', resolve);
-                outputStream.addListener('error', reject);
-            });
-
-            const contents = outputStream.getContents();
-            if (contents === false) {
-                throw new Error('Failed to get contents');
-            }
+            const contents = await downloadVideoWithFfmpeg(
+                postData.preview.reddit_video_preview.dash_url,
+            );
 
             const ref = `reddit:video:${ uuid.v4() }`;
             await redis.setex(
