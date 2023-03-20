@@ -18,7 +18,25 @@ model TelegramAccount {
   isPremium    Boolean?
   createdAt    DateTime @default(now())
 
-  requests Request[]
+  telegramRequests TelegramRequest[]
+}
+
+enum TelegramRequestType {
+  PREFETCH
+  INLINE
+  MESSAGE
+}
+
+model TelegramRequest {
+  id        Int                 @id @default(autoincrement())
+  accountId Int
+  query     String
+  type      TelegramRequestType
+  requestId Int
+  createdAt DateTime            @default(now())
+
+  account TelegramAccount? @relation(fields: [accountId], references: [id])
+  request Request          @relation(fields: [requestId], references: [id])
 }
 
 enum RequestStatus {
@@ -28,17 +46,21 @@ enum RequestStatus {
   FAILED
 }
 
-model Request {
-  id                Int           @id @default(autoincrement())
-  query             Json
-  status            RequestStatus
-  telegramAccountId Int?
-  resultId          Int?
-  createdAt         DateTime      @default(now())
+enum RequestSource {
+  TELEGRAM
+}
 
-  result          RequestResult?   @relation(fields: [resultId], references: [id])
-  telegramAccount TelegramAccount? @relation(fields: [telegramAccountId], references: [id])
+model Request {
+  id        Int            @id @default(autoincrement())
+  query     Json
+  status    RequestStatus
+  source    RequestSource?
+  resultId  Int?
+  createdAt DateTime       @default(now())
+
+  result          RequestResult?    @relation(fields: [resultId], references: [id])
   logs            RequestLog[]
+  TelegramRequest TelegramRequest[]
 }
 
 model RequestLog {

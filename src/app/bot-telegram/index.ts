@@ -12,6 +12,7 @@ import { z } from 'zod';
 
 import { cache } from '../../cache.js';
 import { log } from '../../log.js';
+import { prisma } from '../../prisma.js';
 import { redis, redisPrefix } from '../../redis.js';
 import { bindCallback, createCallback, processCallbacks, submitRequest } from '../../resolvers/lib.js';
 import { resourcesPath } from '../../resources/index.js';
@@ -126,16 +127,27 @@ telegram.on('inline_query', async ctx => {
 
                 const matcherQuery = matcher.prepareQuery(match);
 
-                await submitRequest(
+                const request = await submitRequest(
                     matcher.processor,
                     matcherQuery,
                     undefined,
                     {
-                        telegramAccount: {
+                        source: 'TELEGRAM',
+                    },
+                );
+
+                await prisma.telegramRequest.create({
+                    data: {
+                        query: query,
+                        type: 'PREFETCH',
+                        request: {
+                            connect: { id: request.id },
+                        },
+                        account: {
                             connect: { id: telegramAccount.id },
                         },
                     },
-                );
+                });
 
                 return;
             }
@@ -215,7 +227,7 @@ telegram.on('message', async ctx => {
 
                 const matcherQuery = matcher.prepareQuery(match);
 
-                await submitRequest(
+                const request = await submitRequest(
                     matcher.processor,
                     matcherQuery,
                     bindCallback(processorCallback, {
@@ -225,11 +237,22 @@ telegram.on('message', async ctx => {
                         requiresReply: !isImplicit,
                     }),
                     {
-                        telegramAccount: {
+                        source: 'TELEGRAM',
+                    },
+                );
+
+                await prisma.telegramRequest.create({
+                    data: {
+                        query: query,
+                        type: 'MESSAGE',
+                        request: {
+                            connect: { id: request.id },
+                        },
+                        account: {
                             connect: { id: telegramAccount.id },
                         },
                     },
-                );
+                });
 
                 return;
             }
@@ -271,7 +294,7 @@ telegram.on('chosen_inline_result', async ctx => {
 
                 const matcherQuery = matcher.prepareQuery(match);
 
-                await submitRequest(
+                const request = await submitRequest(
                     matcher.processor,
                     matcherQuery,
                     bindCallback(processorCallback, {
@@ -279,11 +302,22 @@ telegram.on('chosen_inline_result', async ctx => {
                         inlineMessageId: ctx.chosenInlineResult.inline_message_id!,
                     }),
                     {
-                        telegramAccount: {
+                        source: 'TELEGRAM',
+                    },
+                );
+
+                await prisma.telegramRequest.create({
+                    data: {
+                        query: query,
+                        type: 'INLINE',
+                        request: {
+                            connect: { id: request.id },
+                        },
+                        account: {
                             connect: { id: telegramAccount.id },
                         },
                     },
-                );
+                });
 
                 return;
             }

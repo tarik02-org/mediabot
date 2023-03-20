@@ -79,6 +79,8 @@ export const submitRequest = async <TProcessor extends RequestProcessor<any, any
             }
             : undefined,
     }));
+
+    return request;
 };
 
 export const processRequests = async <TQuery, TResult>(
