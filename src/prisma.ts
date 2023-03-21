@@ -1,5 +1,6 @@
-import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
+
+import { PrismaClient } from '../generated/prisma-client/index.js';
 
 const env = z.object({
     DATABASE_URL: z.string(),

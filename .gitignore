@@ -10,4 +10,5 @@
 .config
 dist
 node_modules
+generated
 .env

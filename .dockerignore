@@ -1,6 +1,7 @@
 .local
 .yarn/cache
 dist
+generated
 node_modules
 Justfile
 .env

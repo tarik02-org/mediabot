@@ -39,18 +39,6 @@ RUN node .yarn/releases/yarn-3.4.1.cjs install --immutable
 
 
 ####################################################################################################
-# node_modules_runtime
-####################################################################################################
-
-FROM base AS node_modules_runtime
-
-WORKDIR /app
-ADD .yarn ./.yarn
-ADD package.json yarn.lock .yarnrc.yml .
-RUN node .yarn/releases/yarn-3.4.1.cjs workspaces focus --all --production
-
-
-####################################################################################################
 # ytdlp
 ####################################################################################################
 
@@ -105,8 +93,4 @@ ADD . .
 RUN yarn prisma generate
 RUN yarn build
 
-RUN mv /app/node_modules/@prisma/client /tmp/prisma-client
-RUN rm -r /app/node_modules
-COPY --from=node_modules_runtime /app/node_modules /app/node_modules
-RUN rm -r /app/node_modules/@prisma/client
-RUN mv /tmp/prisma-client /app/node_modules/@prisma/client
+RUN node .yarn/releases/yarn-3.4.1.cjs workspaces focus --all --production
