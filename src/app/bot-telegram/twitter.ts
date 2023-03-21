@@ -21,6 +21,7 @@ export const mapTwitterMedia = (media: any) => {
                     : undefined,
             } as const;
 
+        case 'animated_gif':
         case 'video':
             return {
                 type: 'video',
