@@ -1,7 +1,7 @@
 import got from 'got';
 import { z } from 'zod';
 
-import { DEFAULT_HEADERS } from './common.ts';
+import { DEFAULT_HEADERS } from './common.js';
 
 export const getGuestToken = async (authToken: string) => {
     const response = await got.post('https://api.twitter.com/1.1/guest/activate.json', {

@@ -4,9 +4,9 @@ import * as nodePath from 'node:path';
 import { TwingEnvironment, TwingErrorRuntime, TwingFilter, TwingFunction, TwingLoaderFilesystem } from 'twing';
 import { z } from 'zod';
 
-import { unicodeSubstring } from '../utils/unicodeSubstring.ts';
+import { unicodeSubstring } from '../utils/unicodeSubstring.js';
 
-import { resourcesPath } from './index.ts';
+import { resourcesPath } from './index.js';
 
 const loader = new TwingLoaderFilesystem([
     nodePath.join(

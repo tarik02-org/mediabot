@@ -5,11 +5,11 @@
         "module": "ESNext",
         "moduleResolution": "nodenext",
         "skipLibCheck": true,
-        "allowImportingTsExtensions": true,
         "lib": [
             "ESNext",
             "DOM"
-        ]
+        ],
+        "outDir": "dist"
     },
     "include": [
         "src/**/*"

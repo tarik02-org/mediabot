@@ -1,9 +1,9 @@
 import PQueue from 'p-queue';
 import { z } from 'zod';
 
-import { log } from '../log.ts';
-import { prisma } from '../prisma.ts';
-import { connectRedis, redis, redisPrefix, redlock } from '../redis.ts';
+import { log } from '../log.js';
+import { prisma } from '../prisma.js';
+import { connectRedis, redis, redisPrefix, redlock } from '../redis.js';
 
 export type RequestProcessor<TName extends string, TQuery, TResult> = {
     name: TName,

@@ -1,4 +1,4 @@
-import '../../env.ts';
+import '../../env.js';
 
 import chalk from 'chalk';
 import lodash from 'lodash';
@@ -9,15 +9,15 @@ import { Browser } from 'puppeteer';
 import * as radash from 'radash';
 import { z } from 'zod';
 
-import { log } from '../../log.ts';
-import { processRequests } from '../../resolvers/lib.ts';
-import { filter, makeSearcher, walkDeep } from '../../utils/objectSearch.ts';
+import { log } from '../../log.js';
+import { processRequests } from '../../resolvers/lib.js';
+import { filter, makeSearcher, walkDeep } from '../../utils/objectSearch.js';
 
-import { processor } from './api.ts';
-import { createGmail } from './gmail.ts';
-import { login } from './instagram/login.ts';
-import { createPuppeteer } from './puppeteer.ts';
-import { RawMediaSchema, RawMediaType } from './schema.ts';
+import { processor } from './api.js';
+import { createGmail } from './gmail.js';
+import { login } from './instagram/login.js';
+import { createPuppeteer } from './puppeteer.js';
+import { RawMediaSchema, RawMediaType } from './schema.js';
 
 const findSharedData = makeSearcher(
     walkDeep,

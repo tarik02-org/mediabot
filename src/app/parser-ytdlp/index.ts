@@ -1,4 +1,4 @@
-import '../../env.ts';
+import '../../env.js';
 
 import { execa } from 'execa';
 import * as nodeFs from 'node:fs/promises';
@@ -7,11 +7,11 @@ import * as radash from 'radash';
 import * as uuid from 'uuid';
 import { z } from 'zod';
 
-import { log } from '../../log.ts';
-import { redis, redisPrefix } from '../../redis.ts';
-import { processRequests } from '../../resolvers/lib.ts';
+import { log } from '../../log.js';
+import { redis, redisPrefix } from '../../redis.js';
+import { processRequests } from '../../resolvers/lib.js';
 
-import { processor } from './api.ts';
+import { processor } from './api.js';
 
 type Result = z.infer<(typeof processor)['resultSchema']>;
 

@@ -5,19 +5,20 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/**/*",
-    "app:bot-telegram": "TS_NODE_TRANSPILE_ONLY=true node --experimental-specifier-resolution=node --loader=ts-node/esm src/app/bot-telegram/index.ts",
+    "build": "tsc",
+    "app:bot-telegram": "node dist/app/bot-telegram/index.js",
     "app:bot-telegram:dev": "nodemon -I --exec node --experimental-specifier-resolution=node --loader=ts-node/esm src/app/bot-telegram/index.ts",
-    "app:parser-instagram": "TS_NODE_TRANSPILE_ONLY=true node --experimental-specifier-resolution=node --loader=ts-node/esm src/app/parser-instagram/index.ts",
+    "app:parser-instagram": "node dist/app/parser-instagram/index.js",
     "app:parser-instagram:dev": "nodemon -I --exec node --experimental-specifier-resolution=node --loader=ts-node/esm src/app/parser-instagram/index.ts",
-    "app:parser-reddit": "TS_NODE_TRANSPILE_ONLY=true node --experimental-specifier-resolution=node --loader=ts-node/esm src/app/parser-reddit/index.ts",
+    "app:parser-reddit": "node dist/app/parser-reddit/index.js",
     "app:parser-reddit:dev": "nodemon -I --exec node --experimental-specifier-resolution=node --loader=ts-node/esm src/app/parser-reddit/index.ts",
-    "app:parser-tiktok": "TS_NODE_TRANSPILE_ONLY=true node --experimental-specifier-resolution=node --loader=ts-node/esm src/app/parser-tiktok/index.ts",
+    "app:parser-tiktok": "node dist/app/parser-tiktok/index.js",
     "app:parser-tiktok:dev": "nodemon -I --exec node --experimental-specifier-resolution=node --loader=ts-node/esm src/app/parser-tiktok/index.ts",
-    "app:parser-twitter": "TS_NODE_TRANSPILE_ONLY=true node --experimental-specifier-resolution=node --loader=ts-node/esm src/app/parser-twitter/index.ts",
+    "app:parser-twitter": "node dist/app/parser-twitter/index.js",
     "app:parser-twitter:dev": "nodemon -I --exec node --experimental-specifier-resolution=node --loader=ts-node/esm src/app/parser-twitter/index.ts",
-    "app:parser-ytdlp": "TS_NODE_TRANSPILE_ONLY=true node --experimental-specifier-resolution=node --loader=ts-node/esm src/app/parser-ytdlp/index.ts",
+    "app:parser-ytdlp": "node dist/app/parser-ytdlp/index.js",
     "app:parser-ytdlp:dev": "nodemon -I --exec node --experimental-specifier-resolution=node --loader=ts-node/esm src/app/parser-ytdlp/index.ts",
-    "app:render": "TS_NODE_TRANSPILE_ONLY=true node --experimental-specifier-resolution=node --loader=ts-node/esm src/app/render/index.ts",
+    "app:render": "node dist/app/render/index.js",
     "app:render:dev": "nodemon -I --exec node --experimental-specifier-resolution=node --loader=ts-node/esm src/app/render/index.ts"
   },
   "dependencies": {
@@ -64,7 +65,6 @@
     "ts-node": "^10.9.1",
     "twing": "^5.1.2",
     "type-fest": "^3.6.1",
-    "typescript": "^5.0.2",
     "uuid": "^9.0.0",
     "zod": "^3.21.4"
   },
@@ -85,6 +85,7 @@
     "@types/uuid": "^9.0.1",
     "eslint": "^8.36.0",
     "parallel": "^1.2.0",
-    "prisma": "4.11.0"
+    "prisma": "4.11.0",
+    "typescript": "^5.0.2"
   }
 }

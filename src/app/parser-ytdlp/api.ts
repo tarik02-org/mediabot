@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { createRequestMatcher, createRequestProcessor } from '../../resolvers/lib.ts';
+import { createRequestMatcher, createRequestProcessor } from '../../resolvers/lib.js';
 
 export const processor = createRequestProcessor(
     'ytdlp',

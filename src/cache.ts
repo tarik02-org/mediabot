@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-import { log } from './log.ts';
-import { prisma } from './prisma.ts';
-import { redisPrefix, redlock } from './redis.ts';
+import { log } from './log.js';
+import { prisma } from './prisma.js';
+import { redisPrefix, redlock } from './redis.js';
 
 export const cache = {
     get: async <T>(

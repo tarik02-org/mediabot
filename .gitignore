@@ -8,5 +8,6 @@
 .vscode-server
 .local
 .config
+dist
 node_modules
 .env

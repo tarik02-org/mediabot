@@ -1,5 +1,6 @@
 .local
 .yarn/cache
+dist
 node_modules
 Justfile
 .env

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { createRequestProcessor } from '../../resolvers/lib.ts';
+import { createRequestProcessor } from '../../resolvers/lib.js';
 
 export const processor = createRequestProcessor(
     'render',

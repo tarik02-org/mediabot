@@ -3,7 +3,7 @@ import { google } from 'googleapis';
 import * as fs from 'node:fs/promises';
 import sleep from 'sleep-promise';
 
-import { log } from '../../log.ts';
+import { log } from '../../log.js';
 
 const SCOPES = [
     'https://www.googleapis.com/auth/gmail.modify',
