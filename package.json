@@ -47,6 +47,7 @@
     "p-queue": "^7.3.4",
     "pino": "^8.11.0",
     "pino-pretty": "^10.0.0",
+    "prisma": "4.11.0",
     "prompts": "^2.4.2",
     "puppeteer": "^19.7.5",
     "puppeteer-extra": "^3.3.6",
@@ -85,7 +86,6 @@
     "@types/uuid": "^9.0.1",
     "eslint": "^8.36.0",
     "parallel": "^1.2.0",
-    "prisma": "4.11.0",
     "typescript": "^5.0.2"
   }
 }
