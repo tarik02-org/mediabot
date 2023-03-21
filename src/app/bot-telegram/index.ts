@@ -16,7 +16,7 @@ import { prisma } from '../../prisma.js';
 import { redis, redisPrefix } from '../../redis.js';
 import { bindCallback, createCallback, processCallbacks, submitRequest } from '../../resolvers/lib.js';
 import { resourcesPath } from '../../resources/index.js';
-import { twing } from '../../resources/views.js';
+import { render } from '../../resources/views.js';
 import { telegram } from '../../telegram.js';
 import * as instagramResolver from '../parser-instagram/api.js';
 import * as redditResolver from '../parser-reddit/api.js';
@@ -677,7 +677,7 @@ const spawn = async (fn: () => Promise<void>) => {
                                 ],
                             );
                         } else {
-                            const content = await twing.render('twitter/preview.twig', {
+                            const content = await render('twitter/preview.twig', {
                                 chain,
                                 tweet: status,
                             });

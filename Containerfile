@@ -66,6 +66,8 @@ RUN fc-cache -f -v
 
 FROM runtime AS dev
 
+ENV NODE_ENV development
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ssh \
@@ -81,6 +83,8 @@ WORKDIR /app
 ####################################################################################################
 
 FROM runtime AS app
+
+ENV NODE_ENV production
 
 WORKDIR /app
 COPY --from=node_modules /app/node_modules /app/node_modules

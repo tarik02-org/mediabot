@@ -27,7 +27,7 @@
         </div>
     {% endif %}
 
-    <p class="text-xl leading-tight whitespace-pre-wrap">{{ twitter_text({
+    <p class="text-xl leading-tight whitespace-pre-wrap mt-[10px]">{{ twitter_text({
         text: tweet.full_text,
         displayTextRange: tweet.display_text_range ?? [0, (tweet.full_text | length) - 1],
         entities: tweet.entities,
@@ -52,4 +52,8 @@
     <div class="text-[15px] mt-[5px] text-[#536571]">
         {{ tweet.created_at | parse_date('ccc LLL dd HH:mm:ss ZZZ yyyy') | date('H:i · M d, Y') }}
     </div>
+
+    {% include "twitter/parts/footer.twig" with {
+        tweet: tweet,
+    } %}
 </div>

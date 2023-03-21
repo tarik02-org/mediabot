@@ -1,16 +1,18 @@
 import got from 'got';
+
 import { redis, redisPrefix, redlock } from '../../redis.js';
+
 import { DEFAULT_HEADERS } from './common.js';
 
 export const getStatus = async (
     id: string,
     {
         authToken,
-        guestToken
+        guestToken,
     }: {
         authToken: string,
         guestToken: string
-    }
+    },
 ) => await redlock.using(
     [ `${ redisPrefix }:twitter:status:${ id }:lock` ],
     5 * 1000,
@@ -27,16 +29,16 @@ export const getStatus = async (
                 include_cards: '1',
                 include_reply_count: '1',
                 include_user_entities: '0',
-                tweet_mode: 'extended'
+                tweet_mode: 'extended',
             },
             headers: {
                 ...DEFAULT_HEADERS,
                 'Authorization': `Bearer ${ authToken }`,
-                'X-Guest-Token': guestToken
-            }
+                'X-Guest-Token': guestToken,
+            },
         }).json();
 
         await redis.setex(cacheKey, 60, JSON.stringify(response));
         return response;
-    }
+    },
 );

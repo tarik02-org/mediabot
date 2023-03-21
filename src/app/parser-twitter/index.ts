@@ -66,5 +66,6 @@ await processRequests(
     },
     {
         concurrency: 4,
+        cacheTimeout: 2,
     },
 );
