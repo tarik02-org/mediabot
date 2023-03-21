@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { createRequestMatcher, createRequestProcessor } from '../../resolvers/lib.js';
+import { createRequestMatcher, createRequestProcessor } from '../../resolvers/lib.ts';
 
 const dataSchema = z.union([
     z.object({

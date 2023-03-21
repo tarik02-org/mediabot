@@ -21,7 +21,7 @@ export const makeSearcher = (
                 .map(item => processItem(item, processor))
                 .reduce<any[]>((acc, item) => {
                     acc.push(
-                        ...item
+                        ...item,
                     );
                     return acc;
                 }, []);

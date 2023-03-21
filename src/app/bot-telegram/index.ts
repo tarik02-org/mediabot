@@ -1,6 +1,6 @@
-import '../../env.js';
+import '../../env.ts';
 
-import Sentry from '@sentry/core';
+import * as Sentry from '@sentry/core';
 import fastify from 'fastify';
 import { InputFile, webhookCallback } from 'grammy';
 import { InlineQueryResult, InputMediaAnimation, InputMediaPhoto, InputMediaVideo } from 'grammy/types';
@@ -10,25 +10,25 @@ import { pathToFileURL } from 'node:url';
 import * as uuid from 'uuid';
 import { z } from 'zod';
 
-import { cache } from '../../cache.js';
-import { log } from '../../log.js';
-import { prisma } from '../../prisma.js';
-import { redis, redisPrefix } from '../../redis.js';
-import { bindCallback, createCallback, processCallbacks, submitRequest } from '../../resolvers/lib.js';
-import { resourcesPath } from '../../resources/index.js';
-import { render } from '../../resources/views.js';
-import { telegram } from '../../telegram.js';
-import * as instagramResolver from '../parser-instagram/api.js';
-import * as redditResolver from '../parser-reddit/api.js';
-import * as tiktokResolver from '../parser-tiktok/api.js';
-import * as twitterResolver from '../parser-twitter/api.js';
-import * as ytdlpResolver from '../parser-ytdlp/api.js';
-import * as renderResolver from '../render/api.js';
+import { cache } from '../../cache.ts';
+import { log } from '../../log.ts';
+import { prisma } from '../../prisma.ts';
+import { redis, redisPrefix } from '../../redis.ts';
+import { bindCallback, createCallback, processCallbacks, submitRequest } from '../../resolvers/lib.ts';
+import { resourcesPath } from '../../resources/index.ts';
+import { render } from '../../resources/views.ts';
+import { telegram } from '../../telegram.ts';
+import * as instagramResolver from '../parser-instagram/api.ts';
+import * as redditResolver from '../parser-reddit/api.ts';
+import * as tiktokResolver from '../parser-tiktok/api.ts';
+import * as twitterResolver from '../parser-twitter/api.ts';
+import * as ytdlpResolver from '../parser-ytdlp/api.ts';
+import * as renderResolver from '../render/api.ts';
 
-import { env } from './env.js';
-import { getAccountByUser } from './getAccountByUser.js';
-import { mapTwitterMedia } from './twitter.js';
-import { uploadFileToTelegram } from './uploadFileToTelegram.js';
+import { env } from './env.ts';
+import { getAccountByUser } from './getAccountByUser.ts';
+import { mapTwitterMedia } from './twitter.ts';
+import { uploadFileToTelegram } from './uploadFileToTelegram.ts';
 
 const matchers = [
     instagramResolver.matcher,
@@ -583,7 +583,7 @@ const processDefaultMediaCallback = async (
                                     }
                                     : {
                                         photo_url: item.url,
-                                        thumb_url: item.url,
+                                        thumbnail_url: item.url,
                                     },
                             };
                         }

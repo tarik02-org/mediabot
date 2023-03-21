@@ -1,8 +1,8 @@
 import got from 'got';
 
-import { redis, redisPrefix, redlock } from '../../redis.js';
+import { redis, redisPrefix, redlock } from '../../redis.ts';
 
-import { DEFAULT_HEADERS } from './common.js';
+import { DEFAULT_HEADERS } from './common.ts';
 
 export const getStatus = async (
     id: string,

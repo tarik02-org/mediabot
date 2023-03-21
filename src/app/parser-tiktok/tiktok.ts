@@ -3,7 +3,7 @@ import { JSDOM } from 'jsdom';
 import { Cookie, CookieJar } from 'tough-cookie';
 import { z } from 'zod';
 
-import { Query } from './index.js';
+import { Query } from './index.ts';
 
 const USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0';
 const DEFAULT_HEADERS = {

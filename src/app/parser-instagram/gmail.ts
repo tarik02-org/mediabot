@@ -2,10 +2,11 @@ import { Credentials, OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import * as fs from 'node:fs/promises';
 import sleep from 'sleep-promise';
-import { log } from '../../log.js';
+
+import { log } from '../../log.ts';
 
 const SCOPES = [
-    'https://www.googleapis.com/auth/gmail.modify'
+    'https://www.googleapis.com/auth/gmail.modify',
 ];
 
 type JSONClient = ReturnType<typeof google.auth.fromJSON>;
@@ -17,7 +18,7 @@ export const createGmail = async ({
     clientSecret,
     redirectUri,
 
-    askAuth
+    askAuth,
 }: {
     clientId: string,
     clientSecret: string,
@@ -28,13 +29,13 @@ export const createGmail = async ({
     const oauth2 = new google.auth.OAuth2({
         clientId,
         clientSecret,
-        redirectUri
+        redirectUri,
     });
 
     const loadSavedCredentialsIfExist = async () => {
         try {
             const credentials = JSON.parse(
-                await fs.readFile(TOKEN_PATH, 'utf-8')
+                await fs.readFile(TOKEN_PATH, 'utf-8'),
             );
             return google.auth.fromJSON(credentials as any);
         } catch (err) {
@@ -47,7 +48,7 @@ export const createGmail = async ({
             type: 'authorized_user',
             client_id: clientId,
             client_secret: clientSecret,
-            refresh_token: credentials.refresh_token
+            refresh_token: credentials.refresh_token,
         }));
     };
 
@@ -62,8 +63,8 @@ export const createGmail = async ({
                 scope: SCOPES,
                 access_type: 'offline',
                 response_type: 'code',
-                prompt: 'consent'
-            })
+                prompt: 'consent',
+            }),
         );
 
         const code = (new URL(url)).searchParams.get('code')!;
@@ -74,7 +75,7 @@ export const createGmail = async ({
             type: 'authorized_user',
             client_id: clientId,
             client_secret: clientSecret,
-            refresh_token: token.tokens.refresh_token ?? undefined
+            refresh_token: token.tokens.refresh_token ?? undefined,
         });
 
         if (client.credentials) {
@@ -88,7 +89,7 @@ export const createGmail = async ({
 
     const gmail = google.gmail({
         version: 'v1',
-        auth
+        auth,
     });
 
     return {
@@ -96,12 +97,12 @@ export const createGmail = async ({
             for (let i = 0; i < 10; i++) {
                 await sleep(i * 1000);
 
-                log.debug(`Trying to resolve verify code (attempt ${i + 1} of 10)`);
+                log.debug(`Trying to resolve verify code (attempt ${ i + 1 } of 10)`);
 
                 const messages = await gmail.users.messages.list({
                     userId: 'me',
                     q: 'from:security@mail.instagram.com is:unread Verify your account',
-                    maxResults: 1
+                    maxResults: 1,
                 });
 
                 if (!messages.data.messages?.length) {
@@ -112,12 +113,12 @@ export const createGmail = async ({
                 const message = await gmail.users.messages.get({
                     userId: 'me',
                     id: messageId,
-                    format: 'full'
+                    format: 'full',
                 });
 
                 await gmail.users.messages.trash({
                     userId: 'me',
-                    id: messageId
+                    id: messageId,
                 });
 
                 const rawData = message.data.payload?.body?.data;
@@ -133,6 +134,6 @@ export const createGmail = async ({
             log.warn('Failed to resolve verify code');
 
             return undefined;
-        }
+        },
     };
 };

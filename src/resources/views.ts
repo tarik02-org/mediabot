@@ -4,9 +4,9 @@ import * as nodePath from 'node:path';
 import { TwingEnvironment, TwingErrorRuntime, TwingFilter, TwingFunction, TwingLoaderFilesystem } from 'twing';
 import { z } from 'zod';
 
-import { unicodeSubstring } from '../utils/unicodeSubstring.js';
+import { unicodeSubstring } from '../utils/unicodeSubstring.ts';
 
-import { resourcesPath } from './index.js';
+import { resourcesPath } from './index.ts';
 
 const loader = new TwingLoaderFilesystem([
     nodePath.join(
@@ -109,44 +109,69 @@ export const getEnvironment = () => {
             args,
         );
 
-        const highlightedTextRanges = [];
+        const highlightedTextRanges: Array<(
+            {
+                [K in keyof typeof entities]: { index: number, type: K, data: (typeof entities)[K][number] }
+            }[keyof typeof entities]
+        )> = [];
 
-        for (const [ type, items ] of Object.entries(entities)) {
-            for (const item of items) {
-                highlightedTextRanges.push([ item.indices[ 0 ], type, item ] as const);
-            }
+        for (const item of entities.urls) {
+            highlightedTextRanges.push({ index: item.indices[ 0 ], type: 'urls', data: item });
         }
-        highlightedTextRanges.sort((a, b) => a[ 0 ] - b[ 0 ]);
+        for (const item of entities.hashtags) {
+            highlightedTextRanges.push({ index: item.indices[ 0 ], type: 'hashtags', data: item });
+        }
+        for (const item of entities.user_mentions) {
+            highlightedTextRanges.push({ index: item.indices[ 0 ], type: 'user_mentions', data: item });
+        }
+        for (const item of entities.symbols) {
+            highlightedTextRanges.push({ index: item.indices[ 0 ], type: 'symbols', data: item });
+        }
+        highlightedTextRanges.sort((a, b) => a.index - b.index);
 
         let previous = displayTextRange[ 0 ];
-        const parts = [];
+        const parts: Array<(
+            | {
+                type: 'text',
+                data: string
+            }
+            | {
+                [K in keyof typeof entities]: { type: K, data: (typeof entities)[K][number] }
+            }[keyof typeof entities]
+        )> = [];
 
-        for (const [ , type, item ] of highlightedTextRanges) {
-            const [ start, end ] = item.indices;
+        for (const range of highlightedTextRanges) {
+            const [ start, end ] = range.data.indices;
 
             if (previous < start) {
-                parts.push([ 'text', unicodeSubstring(text, previous, start) ]);
+                parts.push({
+                    type: 'text',
+                    data: unicodeSubstring(text, previous, start),
+                });
             }
 
             if (previous < start && end < displayTextRange[ 1 ]) {
-                parts.push([ type, item ]);
+                parts.push(range);
             }
 
             previous = end;
         }
 
         if (previous < displayTextRange[ 1 ]) {
-            parts.push([ 'text', unicodeSubstring(text, previous, displayTextRange[ 1 ]) ]);
+            parts.push({
+                type: 'text',
+                data: unicodeSubstring(text, previous, displayTextRange[ 1 ]),
+            });
         }
 
         return parts
-            .map(([ type, data ]) => {
+            .map(({ type, data }) => {
                 switch (type) {
                     case 'text':
                         return data;
 
                     case 'urls':
-                        return removedUrls.includes(data.url)
+                        return removedUrls.includes(data.display_url)
                             ? ''
                             : `<span class="text-[#1D9BF0]">${ data.display_url }</span>`;
 

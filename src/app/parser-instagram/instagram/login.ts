@@ -2,7 +2,7 @@ import { Browser, ElementHandle, TimeoutError } from 'puppeteer';
 import * as radash from 'radash';
 import sleep from 'sleep-promise';
 
-import { log } from '../../../log.js';
+import { log } from '../../../log.ts';
 
 export const login = async (
     browser: Browser,

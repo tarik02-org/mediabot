@@ -1,15 +1,15 @@
-import '../../env.js';
+import '../../env.ts';
 
 import * as uuid from 'uuid';
 import { z } from 'zod';
 
-import { log } from '../../log.js';
-import { redis, redisPrefix } from '../../redis.js';
-import { processRequests } from '../../resolvers/lib.js';
+import { log } from '../../log.ts';
+import { redis, redisPrefix } from '../../redis.ts';
+import { processRequests } from '../../resolvers/lib.ts';
 
-import { processor } from './api.js';
-import { downloadFromMusicaldown } from './musicaldown.js';
-import { downloadFromTiktok } from './tiktok.js';
+import { processor } from './api.ts';
+import { downloadFromMusicaldown } from './musicaldown.ts';
+import { downloadFromTiktok } from './tiktok.ts';
 
 export type Query = z.TypeOf<(typeof processor)['querySchema']>;
 export type Result = z.TypeOf<(typeof processor)['resultSchema']>;

@@ -5,8 +5,9 @@ declare module 'redlock' {
     /// <reference types="node" />
     import { EventEmitter } from 'events';
     import { Redis as IORedisClient, Cluster as IORedisCluster } from 'ioredis';
-    declare type Client = IORedisClient | IORedisCluster;
-    export declare type ClientExecutionResult = {
+
+    type Client = IORedisClient | IORedisCluster;
+    export type ClientExecutionResult = {
         client: Client,
         vote: 'for',
         value: number
@@ -15,13 +16,13 @@ declare module 'redlock' {
         vote: 'against',
         error: Error
     };
-    export declare type ExecutionStats = {
+    export type ExecutionStats = {
         readonly membershipSize: number,
         readonly quorumSize: number,
         readonly votesFor: Set<Client>,
         readonly votesAgainst: Map<Client, Error>
     };
-    export declare type ExecutionResult = {
+    export type ExecutionResult = {
         attempts: ReadonlyArray<Promise<ExecutionStats>>
     };
     /**
@@ -34,16 +35,16 @@ declare module 'redlock' {
         readonly retryJitter: number,
         readonly automaticExtensionThreshold: number
     }
-    export declare class ResourceLockedError extends Error {
+    export class ResourceLockedError extends Error {
         readonly message: string;
         constructor(message: string);
     }
-    export declare class ExecutionError extends Error {
+    export class ExecutionError extends Error {
         readonly message: string;
         readonly attempts: ReadonlyArray<Promise<ExecutionStats>>;
         constructor(message: string, attempts: ReadonlyArray<Promise<ExecutionStats>>);
     }
-    export declare class Lock {
+    export class Lock {
         readonly redlock: Redlock;
         readonly resources: string[];
         readonly value: string;
@@ -53,7 +54,7 @@ declare module 'redlock' {
         release(): Promise<ExecutionResult>;
         extend(duration: number): Promise<Lock>;
     }
-    export declare type RedlockAbortSignal = AbortSignal & {
+    export type RedlockAbortSignal = AbortSignal & {
         error?: Error
     };
     /**

@@ -1,4 +1,4 @@
-import '../../env.js';
+import '../../env.ts';
 
 import { z } from 'zod';
 

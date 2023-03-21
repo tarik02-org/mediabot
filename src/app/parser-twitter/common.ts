@@ -3,5 +3,5 @@ export const DEFAULT_HEADERS = {
     'accept': '*/*',
     'accept-language': 'de,en-US;q=0.7,en;q=0.3',
     'accept-encoding': 'gzip, deflate, br',
-    'te': 'trailers'
+    'te': 'trailers',
 };

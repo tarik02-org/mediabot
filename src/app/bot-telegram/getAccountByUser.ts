@@ -1,7 +1,7 @@
 import { User } from 'grammy/types';
 
-import { prisma } from '../../prisma.js';
-import { redisPrefix, redlock } from '../../redis.js';
+import { prisma } from '../../prisma.ts';
+import { redisPrefix, redlock } from '../../redis.ts';
 
 export const getAccountByUser = async (user: User) => await redlock.using(
     [ `${ redisPrefix }telegram:userToAccount:${ user.id }` ],

@@ -1,4 +1,4 @@
-import './env.js';
+import './env.ts';
 
 import { Redis } from 'ioredis';
 import { default as Redlock } from 'redlock';

@@ -1,14 +1,14 @@
-import '../../env.js';
+import '../../env.ts';
 
 import { HTTPError } from 'got';
 import { z } from 'zod';
 
-import { log } from '../../log.js';
-import { processRequests } from '../../resolvers/lib.js';
+import { log } from '../../log.ts';
+import { processRequests } from '../../resolvers/lib.ts';
 
-import { processor } from './api.js';
-import { getGuestToken } from './getGuestToken.js';
-import { getStatus } from './getStatus.js';
+import { processor } from './api.ts';
+import { getGuestToken } from './getGuestToken.ts';
+import { getStatus } from './getStatus.ts';
 
 export type Query = z.TypeOf<(typeof processor)['querySchema']>;
 export type Result = z.TypeOf<(typeof processor)['resultSchema']>;

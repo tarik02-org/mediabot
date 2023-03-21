@@ -1,4 +1,4 @@
-import '../../env.js';
+import '../../env.ts';
 
 import chalk from 'chalk';
 import lodash from 'lodash';
@@ -9,14 +9,15 @@ import { Browser } from 'puppeteer';
 import * as radash from 'radash';
 import { z } from 'zod';
 
-import { log } from '../../log.js';
-import { processRequests } from '../../resolvers/lib.js';
-import { filter, makeSearcher, walkDeep } from '../../utils/objectSearch.js';
+import { log } from '../../log.ts';
+import { processRequests } from '../../resolvers/lib.ts';
+import { filter, makeSearcher, walkDeep } from '../../utils/objectSearch.ts';
 
-import { processor } from './api.js';
-import { createGmail } from './gmail.js';
-import { login } from './instagram/login.js';
-import { createPuppeteer } from './puppeteer.js';
+import { processor } from './api.ts';
+import { createGmail } from './gmail.ts';
+import { login } from './instagram/login.ts';
+import { createPuppeteer } from './puppeteer.ts';
+import { RawMediaSchema, RawMediaType } from './schema.ts';
 
 const findSharedData = makeSearcher(
     walkDeep,
@@ -186,7 +187,7 @@ radash.defer(async defer => {
             case !!lodash.get(postData, 'rootView.props.media_id'): {
                 url = `https://www.instagram.com${ postData.url }`;
 
-                const data = await page.evaluate(
+                const rawData = await page.evaluate(
                     async (url: string) => {
                         const response = await fetch(url, {
                             headers: {
@@ -203,8 +204,16 @@ radash.defer(async defer => {
                 );
 
                 log.debug({
-                    data
+                    data: rawData,
                 }, 'media data');
+
+                const data = z.object({
+                    items: z.array(RawMediaSchema),
+                }).parse(
+                    rawData,
+                );
+
+                title = data.items[ 0 ]?.caption?.text ?? null;
 
                 rawMedia.push(
                     ...data.items,
@@ -217,7 +226,7 @@ radash.defer(async defer => {
 
                 const userId = storyData.rootView.props.user.id;
 
-                const data = await page.evaluate(
+                const rawData = await page.evaluate(
                     async (url: string) => {
                         const response = await fetch(url, {
                             headers: {
@@ -233,16 +242,33 @@ radash.defer(async defer => {
                     `https://i.instagram.com/api/v1/feed/reels_media/?reel_ids=${ userId }`,
                 );
 
+                log.debug({
+                    data: rawData,
+                }, 'media data');
+
+                const data = z.object({
+                    reels: z.record(
+                        z.literal(userId),
+                        z.object({
+                            user: z.object({
+                                full_name: z.string().nullish(),
+                                username: z.string().nullish(),
+                            }),
+                            items: z.array(RawMediaSchema),
+                        }),
+                    ),
+                }).parse(
+                    rawData,
+                );
+
                 title = data.reels[ userId ].user.full_name || data.reels[ userId ].user.username || null;
 
-                const reel = lodash.get(data, `reels.${ userId }.items`, []).find(
+                const reel = data.reels[ userId ].items.find(
                     item => item.pk === storyData.params.initial_media_id,
                 );
                 if (reel) {
                     rawMedia.push(reel);
                 }
-
-                //
                 break;
             }
 
@@ -291,21 +317,27 @@ radash.defer(async defer => {
             }
         }
 
-        const processMedia = (item: any) => {
-            if (item.video_versions) {
-                media.push({
-                    type: 'video',
-                    url: item.video_versions[ 0 ].url,
-                });
-            } else if (item.image_versions2) {
-                media.push({
-                    type: 'photo',
-                    url: item.image_versions2.candidates[ 0 ].url,
-                });
-            } else if (item.carousel_media) {
-                for (const carouselItem of item.carousel_media) {
-                    processMedia(carouselItem);
-                }
+        const processMedia = (item: z.TypeOf<typeof RawMediaSchema>) => {
+            switch (item.media_type) {
+                case RawMediaType.PHOTO:
+                    media.push({
+                        type: 'photo',
+                        url: item.image_versions2.candidates[ 0 ].url,
+                    });
+                    break;
+
+                case RawMediaType.VIDEO:
+                    media.push({
+                        type: 'video',
+                        url: item.video_versions[ 0 ].url,
+                    });
+                    break;
+
+                case RawMediaType.CAROUSEL:
+                    for (const carouselItem of item.carousel_media) {
+                        processMedia(carouselItem);
+                    }
+                    break;
             }
         };
 

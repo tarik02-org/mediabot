@@ -5,8 +5,8 @@ import { createReadStream } from 'node:fs';
 import * as nodePath from 'node:path';
 import { Readable } from 'node:stream';
 
-import { log } from '../../log.js';
-import { telegram } from '../../telegram.js';
+import { log } from '../../log.ts';
+import { telegram } from '../../telegram.ts';
 
 async function uploadFileToTelegram(
     from: URL,

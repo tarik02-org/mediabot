@@ -4,16 +4,19 @@
         "target": "ESNext",
         "module": "ESNext",
         "moduleResolution": "nodenext",
+        "skipLibCheck": true,
+        "allowImportingTsExtensions": true,
         "lib": [
             "ESNext",
             "DOM"
         ]
     },
     "include": [
-        "src"
+        "src/**/*"
     ],
     "ts-node": {
-        "transpileOnly": true,
+        // "transpileOnly": true,
+        "files": true,
         "esm": true
     }
 }

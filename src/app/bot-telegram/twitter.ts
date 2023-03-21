@@ -2,7 +2,7 @@ import got from 'got';
 import { InputFile } from 'grammy';
 import { z } from 'zod';
 
-import { processor } from '../parser-twitter/api.js';
+import { processor } from '../parser-twitter/api.ts';
 
 type Query = z.TypeOf<(typeof processor)['querySchema']>;
 type Result = z.TypeOf<(typeof processor)['resultSchema']>;

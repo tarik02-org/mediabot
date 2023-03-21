@@ -1,4 +1,4 @@
-import '../../env.js';
+import '../../env.ts';
 
 import * as nodePath from 'node:path';
 import * as process from 'node:process';
@@ -7,10 +7,10 @@ import * as radash from 'radash';
 import * as uuid from 'uuid';
 import { z } from 'zod';
 
-import { redis, redisPrefix } from '../../redis.js';
-import { processRequests } from '../../resolvers/lib.js';
+import { redis, redisPrefix } from '../../redis.ts';
+import { processRequests } from '../../resolvers/lib.ts';
 
-import { processor } from './api.js';
+import { processor } from './api.ts';
 
 const env = z.object({
     PUPPETEER_EXECUTABLE_PATH: z.string().optional(),
