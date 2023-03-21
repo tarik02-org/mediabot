@@ -7,6 +7,10 @@ export const env = z.intersection(
         BOT_TOKEN: z.string(),
         TEMPORARY_CHAT_ID: z.coerce.number(),
         SERVICE_NAME: z.string(),
+        INLINE_MODE: z.enum([
+            'request',
+            'immediate',
+        ]).default('request'),
     }),
     z.union([
         z.object({

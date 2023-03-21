@@ -3,7 +3,7 @@ import '../../env.js';
 import Sentry from '@sentry/core';
 import fastify from 'fastify';
 import { InputFile, webhookCallback } from 'grammy';
-import { InputMediaAnimation, InputMediaPhoto, InputMediaVideo } from 'grammy/types';
+import { InlineQueryResult, InputMediaAnimation, InputMediaPhoto, InputMediaVideo } from 'grammy/types';
 import lodash from 'lodash';
 import * as nodePath from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -44,6 +44,10 @@ const contextSchema = z.union([
         chatId: z.number(),
         messageId: z.number().optional(),
         requiresReply: z.boolean(),
+    }),
+    z.object({
+        type: z.literal('inline_query'),
+        inlineQueryId: z.string(),
     }),
     z.object({
         type: z.literal('inline'),
@@ -113,71 +117,126 @@ const [
 ]);
 
 telegram.on('inline_query', async ctx => {
-    const { query, from } = ctx.inlineQuery;
+    const { id, query, from } = ctx.inlineQuery;
 
-    const prefetch = async () => {
-        const telegramAccount = await getAccountByUser(from);
+    switch (env.INLINE_MODE) {
+        case 'request': {
+            const prefetch = async () => {
+                const telegramAccount = await getAccountByUser(from);
 
-        for (const matcher of matchers) {
-            for (const regex of matcher.regex) {
-                const match = query.match(regex);
-                if (match === null) {
-                    continue;
-                }
+                for (const matcher of [ ...matchers, ytdlpResolver.anyLinkMatcher ]) {
+                    for (const regex of matcher.regex) {
+                        const match = query.match(regex);
+                        if (match === null) {
+                            continue;
+                        }
 
-                const matcherQuery = matcher.prepareQuery(match);
+                        const matcherQuery = matcher.prepareQuery(match);
 
-                const request = await submitRequest(
-                    matcher.processor,
-                    matcherQuery,
-                    undefined,
-                    {
-                        source: 'TELEGRAM',
-                    },
-                );
-
-                await prisma.telegramRequest.create({
-                    data: {
-                        query: query,
-                        type: 'PREFETCH',
-                        request: {
-                            connect: { id: request.id },
-                        },
-                        account: {
-                            connect: { id: telegramAccount.id },
-                        },
-                    },
-                });
-
-                return;
-            }
-        }
-    };
-
-    await Promise.all([
-        prefetch(),
-        ctx.answerInlineQuery([
-            {
-                type: 'photo',
-                id: uuid.v4(),
-                title: ctx.inlineQuery.query,
-                photo_file_id: clickToSendFileId,
-                reply_markup: {
-                    inline_keyboard: [
-                        [
+                        const request = await submitRequest(
+                            matcher.processor,
+                            matcherQuery,
+                            undefined,
                             {
-                                text: 'Loading...',
-                                callback_data: 'loading',
+                                source: 'TELEGRAM',
                             },
-                        ],
-                    ],
-                },
-            },
-        ], {
-            cache_time: 0,
-            is_personal: true,
-        }),
-    ]);
+                        );
+
+                        await prisma.telegramRequest.create({
+                            data: {
+                                query: query,
+                                type: 'PREFETCH',
+                                request: {
+                                    connect: { id: request.id },
+                                },
+                                account: {
+                                    connect: { id: telegramAccount.id },
+                                },
+                            },
+                        });
+
+                        return;
+                    }
+                }
+            };
+
+            await Promise.all([
+                prefetch(),
+                ctx.answerInlineQuery([
+                    {
+                        type: 'photo',
+                        id: uuid.v4(),
+                        title: ctx.inlineQuery.query,
+                        photo_file_id: clickToSendFileId,
+                        reply_markup: {
+                            inline_keyboard: [
+                                [
+                                    {
+                                        text: 'Loading...',
+                                        callback_data: 'loading',
+                                    },
+                                ],
+                            ],
+                        },
+                    },
+                ], {
+                    cache_time: 0,
+                    is_personal: true,
+                }),
+            ]);
+
+            break;
+        }
+
+        case 'immediate': {
+            const telegramAccount = await getAccountByUser(from);
+
+            for (const matcher of [ ...matchers, ytdlpResolver.anyLinkMatcher ]) {
+                for (const regex of matcher.regex) {
+                    const match = query.match(regex);
+                    if (match === null) {
+                        continue;
+                    }
+
+                    const matcherQuery = matcher.prepareQuery(match);
+
+                    const request = await submitRequest(
+                        matcher.processor,
+                        matcherQuery,
+                        bindCallback(processorCallback, {
+                            type: 'inline_query',
+                            inlineQueryId: id,
+                        }),
+                        {
+                            source: 'TELEGRAM',
+                        },
+                    );
+
+                    await prisma.telegramRequest.create({
+                        data: {
+                            query: query,
+                            type: 'INLINE',
+                            request: {
+                                connect: { id: request.id },
+                            },
+                            account: {
+                                connect: { id: telegramAccount.id },
+                            },
+                        },
+                    });
+
+                    return;
+                }
+            }
+
+            await ctx.answerInlineQuery([], {
+                cache_time: 0,
+                is_personal: true,
+            });
+
+            break;
+        }
+    }
 });
 
 telegram.on('message', async ctx => {
@@ -272,6 +331,10 @@ telegram.on('message', async ctx => {
 telegram.on('chosen_inline_result', async ctx => {
     log.debug(ctx.chosenInlineResult, 'Received chosen inline result');
 
+    if (env.INLINE_MODE === 'immediate') {
+        return;
+    }
+
     const { query, from } = ctx.chosenInlineResult;
 
     const telegramAccount = await getAccountByUser(from);
@@ -285,7 +348,7 @@ telegram.on('chosen_inline_result', async ctx => {
     );
 
     try {
-        for (const matcher of matchers) {
+        for (const matcher of [ ...matchers, ytdlpResolver.anyLinkMatcher ]) {
             for (const regex of matcher.regex) {
                 const match = query.match(regex);
                 if (match === null) {
@@ -479,6 +542,72 @@ const processDefaultMediaCallback = async (
             break;
         }
 
+        case 'inline_query': {
+            const uploadPhoto = async (file: InputFile): Promise<string> => {
+                const temporaryMessage = await telegram.api.sendPhoto(env.TEMPORARY_CHAT_ID, file);
+
+                telegram.api.deleteMessage(env.TEMPORARY_CHAT_ID, temporaryMessage.message_id).catch(
+                    error => log.error(error, 'Failed to delete temporary message'),
+                );
+
+                return temporaryMessage.photo[ 0 ].file_id;
+            };
+
+            const uploadVideo = async (
+                file: InputFile | string,
+                size?: { width: number, height: number },
+            ): Promise<string> => {
+                const temporaryMessage = await telegram.api.sendVideo(env.TEMPORARY_CHAT_ID, file, {
+                    ...size,
+                    supports_streaming: true,
+                });
+
+                telegram.api.deleteMessage(env.TEMPORARY_CHAT_ID, temporaryMessage.message_id).catch(
+                    error => log.error(error, 'Failed to delete temporary message'),
+                );
+
+                return temporaryMessage.video.file_id;
+            };
+
+            await telegram.api.answerInlineQuery(context.inlineQueryId, [
+                ...await Promise.all(items.map(async (item): Promise<InlineQueryResult> => {
+                    switch (item.type) {
+                        case 'photo': {
+                            return {
+                                type: 'photo',
+                                id: uuid.v4(),
+                                caption,
+                                ...typeof item.url !== 'string'
+                                    ? {
+                                        photo_file_id: await uploadPhoto(item.url),
+                                    }
+                                    : {
+                                        photo_url: item.url,
+                                        thumb_url: item.url,
+                                    },
+                            };
+                        }
+
+                        case 'video':
+                            return {
+                                type: 'video',
+                                id: uuid.v4(),
+                                caption,
+                                title: caption ?? '',
+                                video_file_id: await uploadVideo(item.url, item.size),
+                            };
+                    }
+                })),
+            ], {
+                is_personal: false,
+                cache_time: process.env.NODE_ENV === 'development' ?
+                    1 :
+                    60,
+            });
+
+            break;
+        }
+
         case 'inline': {
             const media = items[ 0 ];
 
@@ -520,8 +649,6 @@ const processDefaultMediaCallback = async (
                         file = temporaryMessage.video.file_id;
                     }
 
-                    log.info(media.size);
-
                     await telegram.api.editMessageMediaInline(context.inlineMessageId, {
                         type: 'video',
                         media: file,
@@ -546,6 +673,10 @@ const replyNotFound = async (ctx: z.TypeOf<typeof contextSchema>) => {
                     reply_to_message_id: ctx.messageId,
                 });
             }
+            break;
+
+        case 'inline_query':
+            await telegram.api.answerInlineQuery(ctx.inlineQueryId, []);
             break;
 
         case 'inline':
