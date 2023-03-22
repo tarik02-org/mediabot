@@ -482,7 +482,7 @@ const processDefaultMediaCallback = async (
                                 ? { width: media.size.width, height: media.size.height }
                                 : {},
 
-                            duration: media.duration,
+                            duration: Math.round(media.duration),
                         } satisfies InputMediaVideo;
                 }
             });
@@ -653,7 +653,7 @@ const processDefaultMediaCallback = async (
                         type: 'video',
                         media: file,
                         caption,
-                        duration: media.duration,
+                        duration: Math.round(media.duration),
                         ...media.size,
                         supports_streaming: true,
                     });
