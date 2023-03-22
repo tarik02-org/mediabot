@@ -482,7 +482,9 @@ const processDefaultMediaCallback = async (
                                 ? { width: media.size.width, height: media.size.height }
                                 : {},
 
-                            duration: Math.round(media.duration),
+                            duration: media.duration !== undefined
+                                ? Math.round(media.duration)
+                                : undefined,
                         } satisfies InputMediaVideo;
                 }
             });
@@ -653,7 +655,9 @@ const processDefaultMediaCallback = async (
                         type: 'video',
                         media: file,
                         caption,
-                        duration: Math.round(media.duration),
+                        duration: media.duration !== undefined
+                            ? Math.round(media.duration)
+                            : undefined,
                         ...media.size,
                         supports_streaming: true,
                     });
