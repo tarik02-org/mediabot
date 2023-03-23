@@ -10,7 +10,7 @@ export const RawMediaSchemaBase = z.object({
     pk: z.string(),
     caption: z.object({
         text: z.string(),
-    }).optional(),
+    }).nullish(),
 });
 
 export const RawMediaSchemaPhoto = z.intersection(RawMediaSchemaBase, z.object({
