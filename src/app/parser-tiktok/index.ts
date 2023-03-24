@@ -1,5 +1,6 @@
 import '../../env.js';
 
+import * as Sentry from '@sentry/core';
 import * as uuid from 'uuid';
 import { z } from 'zod';
 
@@ -27,10 +28,12 @@ await processRequests(
 
         if (musicaldownResult.status === 'rejected') {
             log.error(musicaldownResult.reason, `Download from Musicaldown failed for ${ query.source }`);
+            Sentry.captureException(musicaldownResult.reason);
         }
 
         if (tiktokResult.status === 'rejected') {
             log.error(tiktokResult.reason, `Download from Tiktok failed for ${ query.source }`);
+            Sentry.captureException(tiktokResult.reason);
         }
 
         if (

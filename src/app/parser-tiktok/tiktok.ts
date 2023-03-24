@@ -72,7 +72,7 @@ export const downloadFromTiktok = async (query: Query) => {
                 }),
             ]),
         ),
-        SEO: z.object({
+        SEOState: z.object({
             metaParams: z.object({
                 title: z.string(),
                 description: z.string(),
@@ -89,8 +89,8 @@ export const downloadFromTiktok = async (query: Query) => {
 
     if ('imagePost' in module) {
         return {
-            title: data.SEO.metaParams.title,
-            url: data.SEO.metaParams.canonicalHref,
+            title: data.SEOState.metaParams.title,
+            url: data.SEOState.metaParams.canonicalHref,
 
             type: 'images',
 
@@ -110,8 +110,8 @@ export const downloadFromTiktok = async (query: Query) => {
 
     if ('video' in module) {
         return {
-            title: data.SEO.metaParams.title,
-            url: data.SEO.metaParams.canonicalHref,
+            title: data.SEOState.metaParams.title,
+            url: data.SEOState.metaParams.canonicalHref,
 
             type: 'video',
 

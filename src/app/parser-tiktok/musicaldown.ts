@@ -60,7 +60,7 @@ export const downloadFromMusicaldown = async (query: Query) => {
         '//*[text()="Download Photos:"]',
         dom.window.document,
         null,
-        dom.window.XPathResult.ANY_TYPE,
+        dom.window.XPathResult.FIRST_ORDERED_NODE_TYPE,
         null,
     ).singleNodeValue;
 
