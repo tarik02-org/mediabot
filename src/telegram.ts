@@ -1,4 +1,4 @@
-import './env';
+import './env.js';
 
 import { Bot } from 'grammy';
 import { z } from 'zod';
