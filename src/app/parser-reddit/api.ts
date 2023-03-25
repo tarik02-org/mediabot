@@ -33,6 +33,14 @@ export const processor = createRequestProcessor(
                 })),
             }),
             z.object({
+                type: z.literal('gif'),
+                data: dataSchema,
+                size: z.optional(z.object({
+                    width: z.number(),
+                    height: z.number(),
+                })),
+            }),
+            z.object({
                 type: z.literal('video'),
                 data: dataSchema,
                 size: z.optional(z.object({

@@ -449,6 +449,14 @@ const processDefaultMediaCallback = async (
             }
         }
         | {
+            type: 'gif',
+            url: string | InputFile,
+            size?: {
+                width: number,
+                height: number
+            }
+        }
+        | {
             type: 'video',
             url: string | InputFile,
             size?: {
@@ -465,22 +473,30 @@ const processDefaultMediaCallback = async (
 
     switch (context.type) {
         case 'chat': {
-            const inputMedia: Array<InputMediaPhoto | InputMediaVideo> = items.map(media => {
+            const inputMedia: Array<InputMediaPhoto | InputMediaAnimation | InputMediaVideo> = items.map(media => {
                 switch (media.type) {
                     case 'photo':
                         return {
                             type: 'photo',
                             media: media.url,
+
+                            ...media.size,
                         } satisfies InputMediaPhoto;
+
+                    case 'gif':
+                        return {
+                            type: 'animation',
+                            media: media.url,
+
+                            ...media.size
+                        } satisfies InputMediaAnimation;
 
                     case 'video':
                         return {
                             type: 'video',
                             media: media.url,
 
-                            ...media.size !== undefined
-                                ? { width: media.size.width, height: media.size.height }
-                                : {},
+                            ...media.size,
 
                             duration: media.duration !== undefined
                                 ? Math.round(media.duration)
@@ -555,6 +571,23 @@ const processDefaultMediaCallback = async (
                 return temporaryMessage.photo[ 0 ].file_id;
             };
 
+            const uploadGif = async (
+                file: InputFile | string,
+                size?: { width: number, height: number },
+            ): Promise<string> => {
+                const temporaryMessage = await telegram.api.sendAnimation(env.TEMPORARY_CHAT_ID, file, {
+                    ...size
+                });
+
+                log.info(temporaryMessage);
+
+                telegram.api.deleteMessage(env.TEMPORARY_CHAT_ID, temporaryMessage.message_id).catch(
+                    error => log.error(error, 'Failed to delete temporary message'),
+                );
+
+                return temporaryMessage.animation.file_id;
+            };
+
             const uploadVideo = async (
                 file: InputFile | string,
                 size?: { width: number, height: number },
@@ -587,6 +620,16 @@ const processDefaultMediaCallback = async (
                                         photo_url: item.url,
                                         thumbnail_url: item.url,
                                     },
+                            };
+                        }
+
+                        case 'gif': {
+                            const fileId = await uploadGif(item.url, item.size);
+                            return {
+                                type: 'gif',
+                                id: uuid.v4(),
+                                caption,
+                                gif_file_id: fileId
                             };
                         }
 
@@ -736,6 +779,13 @@ const spawn = async (fn: () => Promise<void>) => {
                                     case 'photo':
                                         return {
                                             type: 'photo',
+                                            url: input,
+                                            size: media.size,
+                                        };
+
+                                    case 'gif':
+                                        return {
+                                            type: 'gif',
                                             url: input,
                                             size: media.size,
                                         };

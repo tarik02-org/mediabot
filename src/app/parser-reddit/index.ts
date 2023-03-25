@@ -248,7 +248,9 @@ const computeForLink = async (link: string): Promise<Result> => {
                 url,
                 media: [
                     {
-                        type: 'photo',
+                        type: postData.url.match(/\.gif/i)
+                            ? 'gif'
+                            : 'photo',
                         data: {
                             type: 'url',
                             url: postData.url,

@@ -1,3 +1,5 @@
+import './env';
+
 import { Bot } from 'grammy';
 import { z } from 'zod';
 
