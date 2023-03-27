@@ -102,7 +102,6 @@ await radash.defer(async defer => {
             args: env.PUPPETEER_ARGS,
             userDataDir: env.PUPPETEER_DATA_PATH ?? nodePath.join(process.cwd(), './data', account.username),
             defaultViewport: { width: 1280, height: 1600 },
-            headless: false,
         });
 
         defer(() => browser.disconnect());
