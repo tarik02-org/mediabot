@@ -25,7 +25,7 @@ const { gmailTwoFactorEnabled } = await prompts({
 
 let gmailTwoFactorAuthData = undefined;
 
-if (gmailTwoFactorEnabled === 'on') {
+if (gmailTwoFactorEnabled) {
     const { clientId } = await prompts({
         type: 'text',
         name: 'clientId',
