@@ -1,6 +1,4 @@
-import { Credentials, OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
-import * as fs from 'node:fs/promises';
 import sleep from 'sleep-promise';
 
 import { log } from '../../log.js';
@@ -11,9 +9,7 @@ const SCOPES = [
 
 type JSONClient = ReturnType<typeof google.auth.fromJSON>;
 
-const TOKEN_PATH = './token.json';
-
-export const createGmail = async ({
+export const authorizeGmail = async ({
     clientId,
     clientSecret,
     redirectUri,
@@ -32,60 +28,38 @@ export const createGmail = async ({
         redirectUri,
     });
 
-    const loadSavedCredentialsIfExist = async () => {
-        try {
-            const credentials = JSON.parse(
-                await fs.readFile(TOKEN_PATH, 'utf-8'),
-            );
-            return google.auth.fromJSON(credentials as any);
-        } catch (err) {
-            return undefined;
-        }
+    const url = await askAuth(
+        oauth2.generateAuthUrl({
+            scope: SCOPES,
+            access_type: 'offline',
+            response_type: 'code',
+            prompt: 'consent',
+        }),
+    );
+
+    const code = (new URL(url)).searchParams.get('code')!;
+
+    const token = await oauth2.getToken(code);
+
+    return {
+        type: 'authorized_user',
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: token.tokens.refresh_token ?? undefined,
     };
+};
 
-    const saveCredentials = async (credentials: Credentials) => {
-        await fs.writeFile(TOKEN_PATH, JSON.stringify({
-            type: 'authorized_user',
-            client_id: clientId,
-            client_secret: clientSecret,
-            refresh_token: credentials.refresh_token,
-        }));
-    };
-
-    const authorize = async () => {
-        let client: OAuth2Client | JSONClient | undefined = await loadSavedCredentialsIfExist();
-        if (client !== undefined) {
-            return client;
-        }
-
-        const url = await askAuth(
-            oauth2.generateAuthUrl({
-                scope: SCOPES,
-                access_type: 'offline',
-                response_type: 'code',
-                prompt: 'consent',
-            }),
-        );
-
-        const code = (new URL(url)).searchParams.get('code')!;
-
-        const token = await oauth2.getToken(code);
-
-        client = google.auth.fromJSON({
-            type: 'authorized_user',
-            client_id: clientId,
-            client_secret: clientSecret,
-            refresh_token: token.tokens.refresh_token ?? undefined,
-        });
-
-        if (client.credentials) {
-            await saveCredentials(client.credentials);
-        }
-
-        return client;
-    };
-
-    const auth = await authorize();
+export const createGmail = async ({
+    credentials,
+}: {
+    credentials: {
+        type: 'authorized_user',
+        client_id: string,
+        client_secret: string,
+        refresh_token: string
+    }
+}) => {
+    const auth = google.auth.fromJSON(credentials);
 
     const gmail = google.gmail({
         version: 'v1',

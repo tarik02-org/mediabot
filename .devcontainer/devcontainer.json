@@ -7,7 +7,8 @@
     "remoteEnv": {
         "DATABASE_URL": "mysql://root:root@mysql:3306/mediabot",
         "REDIS_URL": "redis://redis",
-        "REDIS_PREFIX": "mediabot:"
+        "REDIS_PREFIX": "mediabot:",
+        "YTDLP_PATH": "yt-dlp"
     },
 
     "features": {
@@ -20,7 +21,8 @@
         "vscode": {
             "extensions": [
                 "dbaeumer.vscode-eslint",
-                "whatwedo.twig"
+                "whatwedo.twig",
+                "Prisma.prisma"
             ]
         }
     },

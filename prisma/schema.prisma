@@ -8,38 +8,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model TelegramAccount {
-  id           Int      @id @default(autoincrement())
-  telegramId   BigInt   @unique
-  isBot        Boolean
-  firstName    String
-  lastName     String?
-  username     String?
-  languageCode String?
-  isPremium    Boolean?
-  createdAt    DateTime @default(now())
-
-  telegramRequests TelegramRequest[]
-}
-
-enum TelegramRequestType {
-  PREFETCH
-  INLINE
-  MESSAGE
-}
-
-model TelegramRequest {
-  id        Int                 @id @default(autoincrement())
-  accountId Int
-  query     String
-  type      TelegramRequestType
-  requestId Int
-  createdAt DateTime            @default(now())
-
-  account TelegramAccount? @relation(fields: [accountId], references: [id])
-  request Request          @relation(fields: [requestId], references: [id])
-}
-
 enum RequestStatus {
   PENDING
   PROCESSING
@@ -93,4 +61,55 @@ model Cache {
   value     Json
   expiresAt DateTime
   createdAt DateTime @default(now())
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Telegram
+//----------------------------------------------------------------------------------------------------------------------
+
+model TelegramAccount {
+  id           Int      @id @default(autoincrement())
+  telegramId   BigInt   @unique
+  isBot        Boolean
+  firstName    String
+  lastName     String?
+  username     String?
+  languageCode String?
+  isPremium    Boolean?
+  createdAt    DateTime @default(now())
+
+  telegramRequests TelegramRequest[]
+}
+
+enum TelegramRequestType {
+  PREFETCH
+  INLINE
+  MESSAGE
+}
+
+model TelegramRequest {
+  id        Int                 @id @default(autoincrement())
+  accountId Int
+  query     String
+  type      TelegramRequestType
+  requestId Int
+  createdAt DateTime            @default(now())
+
+  account TelegramAccount? @relation(fields: [accountId], references: [id])
+  request Request          @relation(fields: [requestId], references: [id])
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Telegram
+//----------------------------------------------------------------------------------------------------------------------
+
+model InstagramParserAccount {
+  id                     Int       @id @default(autoincrement())
+  username               String
+  password               String
+  gmailTwoFactorAuthData Json?
+  isActive               Boolean
+  lastUsedAt             DateTime?
+  updatedAt              DateTime  @default(now()) @updatedAt
+  createdAt              DateTime  @default(now())
 }

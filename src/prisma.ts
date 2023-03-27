@@ -1,3 +1,5 @@
+import './env';
+
 import { z } from 'zod';
 
 import { PrismaClient } from '../generated/prisma-client/index.js';

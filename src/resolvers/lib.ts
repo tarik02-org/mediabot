@@ -83,6 +83,10 @@ export const submitRequest = async <TProcessor extends RequestProcessor<any, any
     return request;
 };
 
+export class RetryRequestError extends Error {
+    //
+}
+
 export const processRequests = async <TQuery, TResult>(
     processor: RequestProcessor<any, TQuery, TResult>,
     callback: (data: TQuery) => Promise<TResult>,
@@ -176,6 +180,18 @@ export const processRequests = async <TQuery, TResult>(
                     },
                 });
             } catch (e: any) {
+                if (e instanceof RetryRequestError) {
+                    await prisma.request.update({
+                        where: { id: item.requestId },
+                        data: {
+                            status: 'PENDING',
+                        },
+                    });
+
+                    await redis.lpush(queueKey, rawItem[ 1 ]);
+                    return;
+                }
+
                 await prisma.request.update({
                     where: { id: item.requestId },
                     data: {

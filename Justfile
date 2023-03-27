@@ -4,8 +4,6 @@ dev-bot-telegram:
     #!/usr/bin/env bash
     export MEDIABOT_WORKDIR="{{ root }}/.local/workdir/bot-telegram"
     export SERVICE_NAME="tg"
-    export DATABASE_URL="mysql://root:root@mysql:3306/mediabot"
-    export REDIS_URL="redis://redis"
 
     mkdir -p $MEDIABOT_WORKDIR
     yarn app:bot-telegram:dev
@@ -19,7 +17,7 @@ dev-parser-reddit:
 
 dev-parser-tiktok:
     #!/usr/bin/env bash
-    export MEDIABOT_WORKDIR={{ root }}/.local/workdir/parser-tiktok \
+    export MEDIABOT_WORKDIR={{ root }}/.local/workdir/parser-tiktok
 
     mkdir -p $MEDIABOT_WORKDIR
     yarn app:parser-tiktok:dev

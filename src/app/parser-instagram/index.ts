@@ -1,16 +1,16 @@
 import '../../env.js';
 
-import chalk from 'chalk';
 import lodash from 'lodash';
 import * as nodePath from 'node:path';
 import * as process from 'node:process';
-import prompts from 'prompts';
 import { Browser } from 'puppeteer';
 import * as radash from 'radash';
 import { z } from 'zod';
 
+import { InstagramParserAccount } from '../../../generated/prisma-client/index.js';
 import { log } from '../../log.js';
-import { processRequests } from '../../resolvers/lib.js';
+import { prisma } from '../../prisma.js';
+import { RetryRequestError, processRequests } from '../../resolvers/lib.js';
 import { filter, makeSearcher, walkDeep } from '../../utils/objectSearch.js';
 
 import { processor } from './api.js';
@@ -18,6 +18,7 @@ import { createGmail } from './gmail.js';
 import { login } from './instagram/login.js';
 import { createPuppeteer } from './puppeteer.js';
 import { RawMediaSchema, RawMediaType } from './schema.js';
+import { useInstagramParserAccount } from './useInstagramParserAccount.js';
 
 const findSharedData = makeSearcher(
     walkDeep,
@@ -36,12 +37,6 @@ const findStoryData = makeSearcher(
 );
 
 const env = z.object({
-    CLIENT_ID: z.string(),
-    CLIENT_SECRET: z.string(),
-    REDIRECT_URI: z.string(),
-    IG_USERNAME: z.string(),
-    IG_PASSWORD: z.string(),
-
     PUPPETEER_EXECUTABLE_PATH: z.string().optional(),
     PUPPETEER_ARGS: z.preprocess(
         (value: unknown) => typeof value === 'string' ? value.split(' ') : value,
@@ -54,27 +49,40 @@ const env = z.object({
     process.env,
 );
 
-radash.defer(async defer => {
-    const gmail = await createGmail({
-        clientId: env.CLIENT_ID,
-        clientSecret: env.CLIENT_SECRET,
-        redirectUri: env.REDIRECT_URI,
+await radash.defer(async defer => {
+    const abortController = new AbortController();
+    defer(() => abortController.abort());
 
-        askAuth: async (url: string) => {
-            process.stdout.write('\n');
-            process.stdout.write(`Visit this URL: ${ chalk.blue(url) }\n`);
-            process.stdout.write('Enter the url of redirected page here.\n');
-            process.stdout.write('\n');
+    let account: InstagramParserAccount | null = null;
 
-            const { url: resultUrl } = await prompts({
-                type: 'text',
-                name: 'url',
-                message: 'URL',
-            });
+    log.info('Looking for active unused instagram account...');
 
-            return resultUrl;
-        },
-    });
+    do {
+        if (abortController.signal.aborted) {
+            return;
+        }
+
+        account = await useInstagramParserAccount({
+            signal: abortController.signal,
+        });
+    } while (account === null);
+
+    log.info({
+        username: account.username,
+    }, 'Found account');
+
+    const gmailTwoFactorAuthData = z.object({
+        type: z.literal('authorized_user'),
+        client_id: z.string(),
+        client_secret: z.string(),
+        refresh_token: z.string(),
+    }).nullable().parse(account.gmailTwoFactorAuthData);
+
+    const gmail = gmailTwoFactorAuthData !== null
+        ? await createGmail({
+            credentials: gmailTwoFactorAuthData,
+        })
+        : null;
 
     const puppeteer = await createPuppeteer({
         proxy: env.PUPPETEER_PROXY,
@@ -92,25 +100,40 @@ radash.defer(async defer => {
         browser = await puppeteer.launch({
             executablePath: env.PUPPETEER_EXECUTABLE_PATH,
             args: env.PUPPETEER_ARGS,
-            userDataDir: env.PUPPETEER_DATA_PATH ?? nodePath.join(process.cwd(), './data'),
+            userDataDir: env.PUPPETEER_DATA_PATH ?? nodePath.join(process.cwd(), './data', account.username),
             defaultViewport: { width: 1280, height: 1600 },
+            headless: false,
         });
 
         defer(() => browser.disconnect());
     }
 
     await login(browser, {
-        username: env.IG_USERNAME,
-        password: env.IG_PASSWORD,
+        username: account.username,
+        password: account.password,
 
         resolveVerificationCode: async () => {
-            const code = await gmail.resolveVerifyCode();
+            const code = await gmail?.resolveVerifyCode();
             if (code === undefined) {
                 throw new Error('No verification code found');
             }
             return code;
         },
     });
+
+    const handleChallenge = async (): Promise<never> => {
+        abortController.abort(new Error('Instagram challenge'));
+        await prisma.instagramParserAccount.update({
+            where: {
+                id: account!.id,
+            },
+            data: {
+                isActive: false,
+            },
+        });
+
+        throw new RetryRequestError();
+    };
 
     const computeForLink = async (link: string) => radash.defer(async defer => {
         const page = await browser.newPage();
@@ -143,6 +166,12 @@ radash.defer(async defer => {
         await page.goto(link, {
             waitUntil: 'networkidle2',
         });
+
+        if (new URL(page.url()).pathname.match(/^\/challenge\/?$/)) {
+            log.warn('Challenge');
+
+            await handleChallenge();
+        }
 
         const details = (
             await page.evaluate(() => {
@@ -202,6 +231,12 @@ radash.defer(async defer => {
                     },
                     `https://i.instagram.com/api/v1/media/${ postData.rootView.props.media_id }/info/`,
                 );
+
+                if (z.object({
+                    message: z.literal('checkpoint_required'),
+                }).safeParse(rawData).success) {
+                    await handleChallenge();
+                }
 
                 log.debug({
                     data: rawData,
@@ -358,9 +393,19 @@ radash.defer(async defer => {
 
     await processRequests(
         processor,
-        ({ link }) => computeForLink(link),
+        async ({ link }) => {
+            if (abortController.signal.aborted) {
+                throw new RetryRequestError();
+            }
+            return await computeForLink(link);
+        },
         {
-            concurrency: 4,
+            abortSignal: abortController.signal,
+            concurrency: 1,
         },
     );
 });
+
+setTimeout(() => {
+    process.exit(0);
+}, 1000);

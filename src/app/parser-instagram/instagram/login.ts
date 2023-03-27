@@ -16,7 +16,7 @@ export const login = async (
         resolveVerificationCode: () => Promise<string>
     },
 ) => radash.defer(async defer => {
-    const page = await browser.newPage();
+    let page = await browser.newPage();
     defer(async () => await page.close({
         runBeforeUnload: false,
     }));
@@ -60,13 +60,31 @@ export const login = async (
 
     log.debug('Clicking submit button...');
 
-    await Promise.all([
-        page.waitForNavigation({
-            waitUntil: 'networkidle2',
-            timeout: 60000,
-        }),
-        submitButton.click({ delay: 30 }),
-    ]);
+    try {
+        await Promise.all([
+            page.waitForNavigation({
+                waitUntil: 'networkidle2',
+                timeout: 60000,
+            }),
+            submitButton.click({ delay: 30 }),
+        ]);
+    } catch (e) {
+        if (e instanceof TimeoutError) {
+            page.close().catch(error => log.error(error));
+
+            page = await browser.newPage();
+
+            await page.goto('https://www.instagram.com/accounts/login/', {
+                waitUntil: 'networkidle2',
+            });
+
+            if ((new URL(page.url())).pathname.startsWith('/accounts/login/')) {
+                throw new Error('Login failed');
+            }
+        } else {
+            throw e;
+        }
+    }
 
     if ((new URL(page.url())).pathname.startsWith('/challenge/action/')) {
         const $sendSecurityCodeButtons = await page.$x('//button[text()="Send Security Code"]');
