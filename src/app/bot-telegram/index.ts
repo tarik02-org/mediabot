@@ -542,6 +542,7 @@ const processDefaultMediaCallback = async (
                         ],
                         {
                             reply_to_message_id: context.messageId,
+                            disable_notification: true,
                         },
                     );
                 } else {
@@ -553,6 +554,7 @@ const processDefaultMediaCallback = async (
                             ...extra,
                             caption,
                             reply_to_message_id: context.messageId,
+                            disable_notification: true,
                         },
                     );
                 }
