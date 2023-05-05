@@ -315,10 +315,10 @@ await radash.defer(async defer => {
             }
 
             case !!lodash.get(graphQlResponse, 'data.shortcode_media'): {
-                const media = graphQlResponse.data.shortcode_media;
+                const mediaData = graphQlResponse.data.shortcode_media;
 
-                const items = media.edge_sidecar_to_children?.edges.map((edge: any) => edge.node) || [ media ];
-                title = media.edge_media_to_caption.edges[ 0 ].node.text;
+                const items = mediaData.edge_sidecar_to_children?.edges.map((edge: any) => edge.node) || [ mediaData ];
+                title = mediaData.edge_media_to_caption.edges[ 0 ].node.text;
 
                 for (const item of items) {
                     switch (true) {
