@@ -52,6 +52,7 @@ const contextSchema = z.union([
     z.object({
         type: z.literal('inline'),
         inlineMessageId: z.string(),
+        query: z.string(),
     }),
 ]);
 
@@ -344,6 +345,7 @@ telegram.on('chosen_inline_result', async ctx => {
         {
             type: 'photo',
             media: loadingFileId,
+            caption: query,
         },
     );
 
@@ -363,6 +365,7 @@ telegram.on('chosen_inline_result', async ctx => {
                     bindCallback(processorCallback, {
                         type: 'inline',
                         inlineMessageId: ctx.chosenInlineResult.inline_message_id!,
+                        query,
                     }),
                     {
                         source: 'TELEGRAM',
@@ -392,6 +395,7 @@ telegram.on('chosen_inline_result', async ctx => {
     await replyNotFound({
         type: 'inline',
         inlineMessageId: ctx.chosenInlineResult.inline_message_id!,
+        query,
     });
 });
 
@@ -732,6 +736,7 @@ const replyNotFound = async (ctx: z.TypeOf<typeof contextSchema>) => {
             await telegram.api.editMessageMediaInline(ctx.inlineMessageId, {
                 type: 'photo',
                 media: notFoundFileId,
+                caption: ctx.query,
             });
             break;
     }
