@@ -46,6 +46,8 @@ await radash.defer(async defer => {
             executablePath: env.PUPPETEER_EXECUTABLE_PATH,
             userDataDir: env.PUPPETEER_DATA_PATH ?? nodePath.join(process.cwd(), './data'),
             args: env.PUPPETEER_ARGS,
+            handleSIGINT: false,
+            handleSIGTERM: false,
         });
 
         defer(async () => await browser.close());
