@@ -314,6 +314,20 @@ telegram.on('message', async ctx => {
                     },
                 });
 
+                await ctx.replyWithChatAction(lodash.shuffle([
+                    'typing',
+                    'upload_photo',
+                    'record_video',
+                    'upload_video',
+                    'record_voice',
+                    'upload_voice',
+                    'upload_document',
+                    'choose_sticker',
+                    'find_location',
+                    'record_video_note',
+                    'upload_video_note',
+                ] as const)[ 0 ]);
+
                 return;
             }
         }
