@@ -89,7 +89,7 @@ const [
     loadingFileId,
 ] = await Promise.all([
     cache.get(
-        'telegram:resources:click-to-send',
+        `telegram:${ telegram.botInfo.id }:resources:click-to-send`,
         1000 * 60 * 60 * 24,
         z.string(),
         async () => (await uploadFileToTelegram(
@@ -98,7 +98,7 @@ const [
         )).file_id,
     ),
     cache.get(
-        'telegram:resources:not-found',
+        `telegram:${ telegram.botInfo.id }:resources:not-found`,
         1000 * 60 * 60 * 24,
         z.string(),
         async () => (await uploadFileToTelegram(
@@ -107,7 +107,7 @@ const [
         )).file_id,
     ),
     cache.get(
-        'telegram:resources:loading',
+        `telegram:${ telegram.botInfo.id }:resources:loading`,
         1000 * 60 * 60 * 24,
         z.string(),
         async () => (await uploadFileToTelegram(
@@ -492,7 +492,7 @@ const processDefaultMediaCallback = async (
                             type: 'animation',
                             media: media.url,
 
-                            ...media.size
+                            ...media.size,
                         } satisfies InputMediaAnimation;
 
                     case 'video':
@@ -582,7 +582,7 @@ const processDefaultMediaCallback = async (
                 size?: { width: number, height: number },
             ): Promise<string> => {
                 const temporaryMessage = await telegram.api.sendAnimation(env.TEMPORARY_CHAT_ID, file, {
-                    ...size
+                    ...size,
                 });
 
                 log.info(temporaryMessage);
@@ -635,7 +635,7 @@ const processDefaultMediaCallback = async (
                                 type: 'gif',
                                 id: uuid.v4(),
                                 caption,
-                                gif_file_id: fileId
+                                gif_file_id: fileId,
                             };
                         }
 
