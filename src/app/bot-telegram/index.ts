@@ -799,7 +799,7 @@ radash.defer(async defer => {
                                     item.result.title,
                                     item.result.url,
                                     await Promise.all(item.result.media.map(async media => ({
-                                        type: 'photo',
+                                        type: media.type,
                                         url: media.data.type === 'url'
                                             ? media.data.url
                                             : new InputFile(
