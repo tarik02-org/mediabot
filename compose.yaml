@@ -9,6 +9,9 @@ services:
     volumes:
     - .:/app
     command: /bin/sh -c "while sleep 1000; do :; done"
+    depends_on:
+    - redis
+    - mysql
 
   redis:
     image: docker.io/library/redis:5-alpine

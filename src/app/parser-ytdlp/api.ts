@@ -38,7 +38,7 @@ export const youtubeMatcher = createRequestMatcher(
 
         return {
             key: `ytdlp/youtube/${ videoId }`,
-            source: `https://www.youtube.com/watch?v=${ videoId }`,
+            source: `https://www.youtube.com/watch?v=${ encodeURIComponent(videoId) }`,
         };
     },
     processor,
@@ -71,6 +71,37 @@ export const ninegagMatcher = createRequestMatcher(
     processor,
 );
 
+export const facebookWatchMatcher = createRequestMatcher(
+    [
+        /(?:https?:\/\/)?(?:www\.)?facebook\.com\/watch\/?\?(?<qs>[^\s,]+)/,
+        /(?:https?:\/\/)?(?:www\.)?facebook\.com\/(?:\d+)\/videos\/(?<id>\d+)\/?/,
+    ],
+    match => {
+        if ('qs' in match.groups!) {
+            const searchParams = new URLSearchParams(match.groups!.qs);
+
+            if (!searchParams.has('v')) {
+                throw new Error('expected "v" query parameter');
+            }
+
+            return {
+                key: `ytdlp/facebook-video/${ searchParams.get('v')! }`,
+                source: `https://facebook.com/watch/?v=${ searchParams.get('v')! }`,
+            };
+        }
+
+        if ('id' in match.groups!) {
+            return {
+                key: `ytdlp/facebook-video/${ match.groups!.id }`,
+                source: `https://facebook.com/watch/?v=${ encodeURIComponent(match.groups!.id) }`,
+            };
+        }
+
+        throw new Error('unreachable');
+    },
+    processor,
+);
+
 export const anyLinkMatcher = createRequestMatcher(
     /(?:https?:\/\/)?(?:[\w\-.]+)\/(?:[^\s\n]+)/,
     match => ({
@@ -85,4 +116,5 @@ export const matchers = [
     youtubeShortsMatcher,
     twitchClipMatcher,
     ninegagMatcher,
+    facebookWatchMatcher,
 ] as const;
