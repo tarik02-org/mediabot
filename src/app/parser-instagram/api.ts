@@ -2,6 +2,18 @@ import { z } from 'zod';
 
 import { createRequestMatcher, createRequestProcessor } from '../../resolvers/lib.js';
 
+const dataSchema = z.union([
+    z.object({
+        type: z.literal('url'),
+        url: z.string(),
+    }),
+    z.object({
+        type: z.literal('ref'),
+        ref: z.string(),
+        name: z.string(),
+    }),
+]);
+
 export const processor = createRequestProcessor(
     'instagram',
     z.object({
@@ -14,11 +26,20 @@ export const processor = createRequestProcessor(
         media: z.array(z.union([
             z.object({
                 type: z.literal('photo'),
-                url: z.string(),
+                data: dataSchema,
+                size: z.optional(z.object({
+                    width: z.number(),
+                    height: z.number(),
+                })),
             }),
             z.object({
                 type: z.literal('video'),
-                url: z.string(),
+                data: dataSchema,
+                size: z.optional(z.object({
+                    width: z.number(),
+                    height: z.number(),
+                })),
+                duration: z.optional(z.number()),
             }),
         ])),
     }),

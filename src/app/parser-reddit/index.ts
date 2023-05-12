@@ -3,6 +3,7 @@ import '../../env.js';
 import ffmpeg from 'fluent-ffmpeg';
 import Got from 'got';
 import lodash from 'lodash';
+import * as radash from 'radash';
 import { WritableStreamBuffer } from 'stream-buffers';
 import * as uuid from 'uuid';
 import { z } from 'zod';
@@ -10,6 +11,7 @@ import { z } from 'zod';
 import { log } from '../../log.js';
 import { redis, redisPrefix } from '../../redis.js';
 import { processRequests } from '../../resolvers/lib.js';
+import { useSignalHandler } from '../../utils/signalHandler.js';
 
 import { processor } from './api.js';
 
@@ -313,11 +315,21 @@ const computeForLink = async (link: string): Promise<Result> => {
     throw new Error('Unhandled post type');
 };
 
-await processRequests(
-    processor,
-    ({ link }) => computeForLink(link),
-    {
-        cacheTimeout: 60,
-        concurrency: 10,
-    },
-);
+await radash.defer(async defer => {
+    const abortController = new AbortController();
+    defer(() => abortController.abort());
+
+    defer(
+        useSignalHandler(() => abortController.abort()),
+    );
+
+    await processRequests(
+        processor,
+        ({ link }) => computeForLink(link),
+        {
+            abortSignal: abortController.signal,
+            cacheTimeout: 60,
+            concurrency: 10,
+        },
+    );
+});

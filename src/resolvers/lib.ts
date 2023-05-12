@@ -108,8 +108,13 @@ export const processRequests = async <TQuery, TResult>(
         concurrency,
     });
 
-    while (abortSignal === undefined || abortSignal.aborted === false) {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
         await jobQueue.onIdle();
+
+        if (abortSignal !== undefined && abortSignal.aborted) {
+            break;
+        }
 
         const rawItem = await blockingRedis.brpop(queueKey, 1);
         if (rawItem === null) {
@@ -217,6 +222,8 @@ export const processRequests = async <TQuery, TResult>(
             }
         });
     }
+
+    await jobQueue.onEmpty();
 };
 
 export const createCallback = <TContext, TProcessors extends ReadonlyArray<RequestProcessor<string, any, any>>>(

@@ -5,13 +5,17 @@ import * as nodePath from 'node:path';
 import * as process from 'node:process';
 import { Browser } from 'puppeteer';
 import * as radash from 'radash';
+import * as uuid from 'uuid';
 import { z } from 'zod';
 
 import { InstagramParserAccount } from '../../../generated/prisma-client/index.js';
 import { log } from '../../log.js';
 import { prisma } from '../../prisma.js';
+import { redis, redisPrefix } from '../../redis.js';
 import { RetryRequestError, processRequests } from '../../resolvers/lib.js';
 import { filter, makeSearcher, walkDeep } from '../../utils/objectSearch.js';
+import { useSignalHandler } from '../../utils/signalHandler.js';
+import { sleep } from '../../utils/sleep.js';
 
 import { processor } from './api.js';
 import { createGmail } from './gmail.js';
@@ -19,6 +23,9 @@ import { login } from './instagram/login.js';
 import { createPuppeteer } from './puppeteer.js';
 import { RawMediaSchema, RawMediaType } from './schema.js';
 import { useInstagramParserAccount } from './useInstagramParserAccount.js';
+
+export type Query = z.TypeOf<(typeof processor)['querySchema']>;
+export type Result = z.TypeOf<(typeof processor)['resultSchema']>;
 
 const findSharedData = makeSearcher(
     walkDeep,
@@ -53,6 +60,10 @@ await radash.defer(async defer => {
     const abortController = new AbortController();
     defer(() => abortController.abort());
 
+    defer(
+        useSignalHandler(() => abortController.abort()),
+    );
+
     let account: InstagramParserAccount | null = null;
 
     log.info('Looking for active unused instagram account...');
@@ -65,7 +76,18 @@ await radash.defer(async defer => {
         account = await useInstagramParserAccount({
             signal: abortController.signal,
         });
+
+        await sleep(1000, abortController.signal);
     } while (account === null);
+
+    defer(async () => {
+        await prisma.instagramParserAccount.update({
+            where: { id: account!.id },
+            data: {
+                lastUsedAt: null,
+            },
+        });
+    });
 
     log.info({
         username: account.username,
@@ -95,16 +117,18 @@ await radash.defer(async defer => {
             browserURL: env.PUPPETEER_REMOTE_URL,
         });
 
-        defer(async () => await browser.close());
+        defer(() => browser.disconnect());
     } else {
         browser = await puppeteer.launch({
             executablePath: env.PUPPETEER_EXECUTABLE_PATH,
             args: env.PUPPETEER_ARGS,
             userDataDir: env.PUPPETEER_DATA_PATH ?? nodePath.join(process.cwd(), './data', account.username),
             defaultViewport: { width: 1280, height: 1600 },
+            handleSIGINT: false,
+            handleSIGTERM: false,
         });
 
-        defer(() => browser.disconnect());
+        defer(async () => await browser.close());
     }
 
     await login(browser, {
@@ -209,7 +233,30 @@ await radash.defer(async defer => {
 
         let title = postData?.meta.title ?? null;
         let url: string | null = null;
-        const media: any[] = [];
+        const media: Array<Result['media'][number]> = [];
+
+        const downloadToRef = async (ref: string, url: string) => {
+            const data = Buffer.from(
+                await page.evaluate(async url => {
+                    const blob = await (await fetch(url)).blob();
+
+                    return await new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.addEventListener(
+                            'loadend',
+                            () => resolve(
+                                (reader.result! as string).split(',')[ 1 ],
+                            ),
+                        );
+                        reader.addEventListener('error', reject);
+                        reader.readAsDataURL(blob);
+                    });
+                }, url),
+                'base64url',
+            );
+
+            await redis.setex(`${ redisPrefix }:${ ref }`, 120, data);
+        };
 
         switch (true) {
             case !!lodash.get(postData, 'rootView.props.media_id'): {
@@ -295,6 +342,7 @@ await radash.defer(async defer => {
                     rawData,
                 );
 
+                console.log(data.reels);
                 title = data.reels[ userId ].user.full_name || data.reels[ userId ].user.username || null;
 
                 const reel = data.reels[ userId ].items.find(
@@ -322,25 +370,55 @@ await radash.defer(async defer => {
 
                 for (const item of items) {
                     switch (true) {
-                        case item.is_video:
+                        case item.is_video: {
                             // item.dimensions.width
                             // item.dimensions.height
                             // item.video_duration
                             // item.video_url
+
+                            const ref = `instagram:video:${ uuid.v4() }`;
+
+                            await downloadToRef(ref, item.video_url);
+
                             media.push({
                                 type: 'video',
-                                url: item.video_url,
+                                data: {
+                                    type: 'ref',
+                                    ref,
+                                    name: nodePath.basename(new URL(item.video_url).pathname),
+                                },
+                                size: {
+                                    width: item.dimensions.width,
+                                    height: item.dimensions.height,
+                                },
+                                duration: item.video_duration,
                             });
                             break;
+                        }
 
-                        default:
+                        default: {
+                            // item.display_url
                             // item.dimensions.width
                             // item.dimensions.height
+
+                            const ref = `instagram:photo:${ uuid.v4() }`;
+
+                            await downloadToRef(ref, item.display_url);
+
                             media.push({
                                 type: 'photo',
-                                url: item.display_url,
+                                data: {
+                                    type: 'ref',
+                                    ref,
+                                    name: nodePath.basename(new URL(item.display_url).pathname),
+                                },
+                                size: {
+                                    width: item.dimensions.width,
+                                    height: item.dimensions.height,
+                                },
                             });
                             break;
+                        }
                     }
                 }
                 break;
@@ -351,33 +429,58 @@ await radash.defer(async defer => {
             }
         }
 
-        const processMedia = (item: z.TypeOf<typeof RawMediaSchema>) => {
+        const processMedia = async (item: z.TypeOf<typeof RawMediaSchema>): Promise<Array<Result['media'][number]>> => {
             switch (item.media_type) {
-                case RawMediaType.PHOTO:
-                    media.push({
-                        type: 'photo',
-                        url: item.image_versions2.candidates[ 0 ].url,
-                    });
-                    break;
+                case RawMediaType.PHOTO: {
+                    const ref = `instagram:photo:${ uuid.v4() }`;
 
-                case RawMediaType.VIDEO:
-                    media.push({
+                    await downloadToRef(ref, item.image_versions2.candidates[ 0 ].url);
+
+                    return [ {
+                        type: 'photo',
+                        data: {
+                            type: 'ref',
+                            ref,
+                            name: nodePath.basename(new URL(item.image_versions2.candidates[ 0 ].url).pathname),
+                        },
+                    } ];
+                }
+
+                case RawMediaType.VIDEO: {
+                    const ref = `instagram:video:${ uuid.v4() }`;
+
+                    await downloadToRef(ref, item.video_versions[ 0 ].url);
+
+                    return [ {
                         type: 'video',
-                        url: item.video_versions[ 0 ].url,
-                    });
-                    break;
+                        data: {
+                            type: 'ref',
+                            ref,
+                            name: nodePath.basename(new URL(item.video_versions[ 0 ].url).pathname),
+                        },
+                    } ];
+                }
 
                 case RawMediaType.CAROUSEL:
-                    for (const carouselItem of item.carousel_media) {
-                        processMedia(carouselItem);
-                    }
-                    break;
+                    return (
+                        await Promise.all(
+                            item.carousel_media.map(
+                                async carouselItem => await processMedia(carouselItem),
+                            ),
+                        )
+                    ).flat(1);
             }
         };
 
-        for (const item of rawMedia) {
-            processMedia(item);
-        }
+        media.push(
+            ...(
+                await Promise.all(
+                    rawMedia.map(
+                        async item => await processMedia(item),
+                    ),
+                )
+            ).flat(1),
+        );
 
         if (media.length === 0) {
             throw new Error('No media found');
@@ -404,7 +507,3 @@ await radash.defer(async defer => {
         },
     );
 });
-
-setTimeout(() => {
-    process.exit(0);
-}, 1000);

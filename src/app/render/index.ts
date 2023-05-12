@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 import { redis, redisPrefix } from '../../redis.js';
 import { processRequests } from '../../resolvers/lib.js';
+import { useSignalHandler } from '../../utils/signalHandler.js';
 
 import { processor } from './api.js';
 
@@ -25,6 +26,13 @@ const env = z.object({
 );
 
 await radash.defer(async defer => {
+    const abortController = new AbortController();
+    defer(() => abortController.abort());
+
+    defer(
+        useSignalHandler(() => abortController.abort()),
+    );
+
     let browser: Browser;
 
     if (env.PUPPETEER_REMOTE_URL !== undefined) {
@@ -32,7 +40,7 @@ await radash.defer(async defer => {
             browserURL: env.PUPPETEER_REMOTE_URL,
         });
 
-        defer(async () => await browser.close());
+        defer(() => browser.disconnect());
     } else {
         browser = await puppeteer.launch({
             executablePath: env.PUPPETEER_EXECUTABLE_PATH,
@@ -40,7 +48,7 @@ await radash.defer(async defer => {
             args: env.PUPPETEER_ARGS,
         });
 
-        defer(() => browser.disconnect());
+        defer(async () => await browser.close());
     }
 
     await processRequests(
@@ -97,6 +105,7 @@ await radash.defer(async defer => {
             };
         }),
         {
+            abortSignal: abortController.signal,
             concurrency: 16,
             cacheTimeout: 60,
         },

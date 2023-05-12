@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { log } from '../../log.js';
 import { redis, redisPrefix } from '../../redis.js';
 import { processRequests } from '../../resolvers/lib.js';
+import { useSignalHandler } from '../../utils/signalHandler.js';
 
 import { processor } from './api.js';
 
@@ -21,86 +22,96 @@ const env = z.object({
     process.env,
 );
 
-await processRequests(
-    processor,
-    async ({ key, source }) => await radash.defer(async defer => {
-        log.debug({ source }, 'processing');
+await radash.defer(async defer => {
+    const abortController = new AbortController();
+    defer(() => abortController.abort());
 
-        const tmpDir = `${ nodeProcess.cwd() }/tmp/${ key.replace(/\//g, '+') }`;
-        await nodeFs.mkdir(tmpDir, { recursive: true });
-        defer(async () => nodeFs.rm(tmpDir, { recursive: true, force: true }));
+    defer(
+        useSignalHandler(() => abortController.abort()),
+    );
 
-        const process = await execa(env.YTDLP_PATH, [
-            '--no-playlist',
-            '--print-json',
-            '--no-progress',
-            '-f', '(b[ext=mp4])[filesize<50M]/(bv[ext=mp4]+ba[ext=m4a])[filesize<50M]/b/bv',
-            '-o', '%(title).200s.%(ext)s',
-            source,
-        ], {
-            cwd: tmpDir,
-            stdout: 'pipe',
-            stderr: 'pipe',
-        });
+    await processRequests(
+        processor,
+        async ({ key, source }) => await radash.defer(async defer => {
+            log.debug({ source }, 'processing');
 
-        if (process.exitCode !== 0) {
-            log.error({
-                exitCode: process.exitCode,
-                stdout: process.stdout,
-                stderr: process.stderr,
-            }, 'ytdlp failed');
+            const tmpDir = `${ nodeProcess.cwd() }/tmp/${ key.replace(/\//g, '+') }`;
+            await nodeFs.mkdir(tmpDir, { recursive: true });
+            defer(async () => nodeFs.rm(tmpDir, { recursive: true, force: true }));
 
-            throw new Error('ytdlp failed');
-        }
+            const process = await execa(env.YTDLP_PATH, [
+                '--no-playlist',
+                '--print-json',
+                '--no-progress',
+                '-f', '(b[ext=mp4])[filesize<50M]/(bv[ext=mp4]+ba[ext=m4a])[filesize<50M]/b/bv',
+                '-o', '%(title).200s.%(ext)s',
+                source,
+            ], {
+                cwd: tmpDir,
+                stdout: 'pipe',
+                stderr: 'pipe',
+            });
 
-        const rawOutput = JSON.parse(process.stdout);
+            if (process.exitCode !== 0) {
+                log.error({
+                    exitCode: process.exitCode,
+                    stdout: process.stdout,
+                    stderr: process.stderr,
+                }, 'ytdlp failed');
 
-        log.debug({
-            output: rawOutput,
-        }, 'ytdlp output');
+                throw new Error('ytdlp failed');
+            }
 
-        const output = z.object({
-            title: z.string(),
-            webpage_url: z.string(),
+            const rawOutput = JSON.parse(process.stdout);
 
-            filename: z.string(),
+            log.debug({
+                output: rawOutput,
+            }, 'ytdlp output');
 
-            width: z.number().optional(),
-            height: z.number().optional(),
-            duration: z.number().optional(),
-        }).parse(
-            rawOutput,
-        );
+            const output = z.object({
+                title: z.string(),
+                webpage_url: z.string(),
 
-        const videoId = uuid.v4();
-        const ref = `ytdlp:video:${ videoId }`;
+                filename: z.string(),
 
-        await redis.setex(
-            `${ redisPrefix }:${ ref }`, 120,
-            await nodeFs.readFile(`${ tmpDir }/${ output.filename }`),
-        );
+                width: z.number().optional(),
+                height: z.number().optional(),
+                duration: z.number().optional(),
+            }).parse(
+                rawOutput,
+            );
 
-        return {
-            title: output.title,
-            url: output.webpage_url,
+            const videoId = uuid.v4();
+            const ref = `ytdlp:video:${ videoId }`;
 
-            media: [
-                {
-                    type: 'video',
-                    ref,
-                    size: output.width && output.height
-                        ? {
-                            width: output.width,
-                            height: output.height,
-                        }
-                        : undefined,
-                    duration: output.duration,
-                },
-            ],
-        } satisfies Result;
-    }),
-    {
-        concurrency: 16,
-        cacheTimeout: 60,
-    },
-);
+            await redis.setex(
+                `${ redisPrefix }:${ ref }`, 120,
+                await nodeFs.readFile(`${ tmpDir }/${ output.filename }`),
+            );
+
+            return {
+                title: output.title,
+                url: output.webpage_url,
+
+                media: [
+                    {
+                        type: 'video',
+                        ref,
+                        size: output.width && output.height
+                            ? {
+                                width: output.width,
+                                height: output.height,
+                            }
+                            : undefined,
+                        duration: output.duration,
+                    },
+                ],
+            } satisfies Result;
+        }),
+        {
+            abortSignal: abortController.signal,
+            concurrency: 16,
+            cacheTimeout: 60,
+        },
+    );
+});
