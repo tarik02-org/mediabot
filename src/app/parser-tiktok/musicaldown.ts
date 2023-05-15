@@ -52,7 +52,7 @@ export const downloadFromMusicaldown = async (query: Query) => {
             headers: {
                 ...DEFAULT_HEADERS,
             },
-            followRedirect: false,
+            followRedirect: true,
         }).text(),
     );
 
@@ -73,7 +73,11 @@ export const downloadFromMusicaldown = async (query: Query) => {
         el => innerText(el),
     );
 
-    const url = dom.window.document.querySelectorAll<HTMLAnchorElement>('a.btn.waves-effect.waves-light.orange')[ 1 ].href;
+    const url = dom.window.document.querySelectorAll<HTMLAnchorElement>('a.btn.waves-effect.waves-light.orange')[ 1 ]?.href;
+    console.log(description, url);
+    if (url === undefined) {
+        return null;
+    }
 
     return {
         title: description,

@@ -53,6 +53,7 @@ export const matcher = createRequestMatcher(
     [
         /(?:https?:\/\/)?(?:www\.)?tiktok\.com\/(?<author>@[^/]+)\/video\/(?<videoId>[0-9]+)\/?[^\s]*/,
         /(?:https?:\/\/)?(?:www\.)?vm\.tiktok\.com\/(?<hash>[^/]+)\/?[^\s]*/,
+        /(?:https?:\/\/)?(?:www\.)?tiktok\.com\/t\/(?<hash2>[^/]+)\/?[^\s]*/,
     ],
     rawMatch => {
         const match = z.union([
@@ -63,19 +64,29 @@ export const matcher = createRequestMatcher(
             z.object({
                 hash: z.string(),
             }),
+            z.object({
+                hash2: z.string(),
+            }),
         ]).parse(rawMatch.groups);
 
         if ('author' in match && 'videoId' in match) {
             return {
-                key: `${ match.author }/${ match.videoId }`,
+                key: `tiktok.com/${ match.author }/video/${ match.videoId }`,
                 source: `https://tiktok.com/${ match.author }/video/${ match.videoId }`,
             };
         }
 
         if ('hash' in match) {
             return {
-                key: match.hash,
+                key: `vm.tiktok.com/${ match.hash }`,
                 source: `https://vm.tiktok.com/${ match.hash }`,
+            };
+        }
+
+        if ('hash2' in match) {
+            return {
+                key: `tiktok.com/t/${ match.hash2 }`,
+                source: `https://tiktok.com/t/${ match.hash2 }`,
             };
         }
 
