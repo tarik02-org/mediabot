@@ -35,7 +35,10 @@ FROM base AS node_modules
 WORKDIR /app
 ADD .yarn ./.yarn
 ADD package.json yarn.lock .yarnrc.yml .
-RUN node .yarn/releases/yarn-3.4.1.cjs install --immutable
+
+ADD apps/discord-bot/package.json ./apps/discord-bot/
+
+RUN ls -la && node .yarn/releases/yarn-3.4.1.cjs install --immutable
 
 
 ####################################################################################################
