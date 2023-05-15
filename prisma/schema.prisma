@@ -17,6 +17,7 @@ enum RequestStatus {
 
 enum RequestSource {
   TELEGRAM
+  DISCORD
 }
 
 model Request {
@@ -30,6 +31,7 @@ model Request {
   result          RequestResult?    @relation(fields: [resultId], references: [id])
   logs            RequestLog[]
   TelegramRequest TelegramRequest[]
+  DiscordRequest  DiscordRequest[]
 }
 
 model RequestLog {
@@ -100,7 +102,20 @@ model TelegramRequest {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// Telegram
+// Discord
+//----------------------------------------------------------------------------------------------------------------------
+
+model DiscordRequest {
+  id        Int      @id @default(autoincrement())
+  query     String
+  requestId Int
+  createdAt DateTime @default(now())
+
+  request Request @relation(fields: [requestId], references: [id])
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Instagram
 //----------------------------------------------------------------------------------------------------------------------
 
 model InstagramParserAccount {
