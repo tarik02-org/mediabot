@@ -25,8 +25,12 @@ export const RawMediaSchemaPhoto = z.intersection(RawMediaSchemaBase, z.object({
 export const RawMediaSchemaVideo = z.intersection(RawMediaSchemaBase, z.object({
     media_type: z.literal(RawMediaType.VIDEO),
     video_versions: z.array(z.object({
+        type: z.number(),
+        width: z.number(),
+        height: z.number(),
         url: z.string(),
     })),
+    video_duration: z.number(),
 }));
 
 export const RawMediaSchemaCarousel = z.intersection(RawMediaSchemaBase, z.object({

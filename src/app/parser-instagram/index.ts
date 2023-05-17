@@ -342,7 +342,6 @@ await radash.defer(async defer => {
                     rawData,
                 );
 
-                console.log(data.reels);
                 title = data.reels[ userId ].user.full_name || data.reels[ userId ].user.username || null;
 
                 const reel = data.reels[ userId ].items.find(
@@ -458,6 +457,11 @@ await radash.defer(async defer => {
                             ref,
                             name: nodePath.basename(new URL(item.video_versions[ 0 ].url).pathname),
                         },
+                        size: {
+                            width: item.video_versions[ 0 ].width,
+                            height: item.video_versions[ 0 ].height,
+                        },
+                        duration: item.video_duration,
                     } ];
                 }
 
