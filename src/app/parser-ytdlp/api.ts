@@ -44,6 +44,21 @@ export const youtubeMatcher = createRequestMatcher(
     processor,
 );
 
+export const youtubeClipMatcher = createRequestMatcher(
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/clip\/(?<clipId>[\w\-.]+)/,
+    match => {
+        const { clipId } = z.object({
+            clipId: z.string(),
+        }).parse(match.groups);
+
+        return {
+            key: `ytdlp/youtube-clip/${ clipId }`,
+            source: `https://www.youtube.com/clip/${ clipId }`,
+        };
+    },
+    processor,
+);
+
 export const youtubeShortsMatcher = createRequestMatcher(
     /(?:https?:\/\/)?(?:www\.)?youtube\.com\/shorts\/(?<id>[\w\-.]+)/,
     match => ({
@@ -113,6 +128,7 @@ export const anyLinkMatcher = createRequestMatcher(
 
 export const matchers = [
     // youtubeMatcher,
+    youtubeClipMatcher,
     youtubeShortsMatcher,
     twitchClipMatcher,
     ninegagMatcher,
