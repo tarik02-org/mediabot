@@ -1,0 +1,8 @@
+{
+    "name": "@mediabot/parser-reddit",
+    "type": "module",
+    "dependencies": {
+        "@mediabot/app": "workspace:*",
+        "@mediabot/utils": "workspace:*"
+    }
+}

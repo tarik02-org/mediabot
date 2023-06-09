@@ -1,0 +1,10 @@
+{
+    "name": "@mediabot/runner-dev",
+    "type": "module",
+    "dependencies": {
+        "vite": "^4.3.9"
+    },
+    "bin": {
+        "mediabot-runner-dev": "./index.js"
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "name": "@mediabot/prisma",
+    "type": "module",
+    "exports": {
+        ".": {
+            "default": "./index.js",
+            "types": "./index.d.ts"
+        }
+    }
+}

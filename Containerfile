@@ -18,7 +18,7 @@ RUN sed -i'.bak' 's/$/ contrib/' /etc/apt/sources.list && \
         ffmpeg \
         python3
 
-RUN curl -fsSL https://deb.nodesource.com/setup_19.x | bash - && \
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs
 
 RUN rm -rf /var/lib/apt/lists/*
@@ -36,9 +36,23 @@ WORKDIR /app
 ADD .yarn ./.yarn
 ADD package.json yarn.lock .yarnrc.yml .
 
-ADD apps/discord-bot/package.json ./apps/discord-bot/
+ADD packages/app/package.json ./packages/app/
+ADD packages/app-render/package.json ./packages/app-render/
+ADD packages/bot-discord/package.json ./packages/bot-discord/
+ADD packages/bot-telegram/package.json ./packages/bot-telegram/
+ADD packages/broker/package.json ./packages/broker/
+ADD packages/parser-instagram/package.json ./packages/parser-instagram/
+ADD packages/parser-reddit/package.json ./packages/parser-reddit/
+ADD packages/parser-tiktok/package.json ./packages/parser-tiktok/
+ADD packages/parser-twitter/package.json ./packages/parser-twitter/
+ADD packages/parser-ytdlp/package.json ./packages/parser-ytdlp/
+ADD packages/prisma/package.json ./packages/prisma/
+ADD packages/resources/package.json ./packages/resources/
+ADD packages/runner/package.json ./packages/runner/
+ADD packages/runner-dev/package.json ./packages/runner-dev/
+ADD packages/utils/package.json ./packages/utils/
 
-RUN ls -la && node .yarn/releases/yarn-3.4.1.cjs install --immutable
+RUN node .yarn/releases/yarn-3.6.0.cjs install --immutable
 
 
 ####################################################################################################
@@ -59,7 +73,7 @@ FROM base AS runtime
 
 COPY --from=ytdlp /usr/local/bin/yt-dlp /usr/local/bin/yt-dlp
 
-ADD resources/fonts/Twemoji.ttf /usr/share/fonts/truetype/
+ADD packages/resources/assets/fonts/Twemoji.ttf /usr/share/fonts/truetype/
 RUN fc-cache -f -v
 
 
@@ -94,6 +108,5 @@ COPY --from=node_modules /app/node_modules /app/node_modules
 
 ADD . .
 RUN yarn prisma generate
-RUN yarn build
 
-RUN node .yarn/releases/yarn-3.4.1.cjs workspaces focus --all --production
+RUN node .yarn/releases/yarn-3.6.0.cjs workspaces focus --all --production

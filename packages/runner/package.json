@@ -1,0 +1,11 @@
+{
+    "name": "@mediabot/runner",
+    "type": "module",
+    "bin": {
+        "mediabot-runner": "./index.ts"
+    },
+    "dependencies": {
+        "ts-node": "^10.9.1",
+        "typescript": "^5.1.3"
+    }
+}

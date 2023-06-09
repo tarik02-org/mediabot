@@ -1,0 +1,9 @@
+{
+    "name": "@mediabot/parser-instagram",
+    "type": "module",
+    "dependencies": {
+        "@mediabot/app": "workspace:*",
+        "@mediabot/broker": "workspace:*",
+        "@mediabot/utils": "workspace:*"
+    }
+}

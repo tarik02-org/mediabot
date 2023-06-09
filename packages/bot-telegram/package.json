@@ -1,0 +1,7 @@
+{
+    "name": "@mediabot/bot-telegram",
+    "type": "module",
+    "dependencies": {
+        "grammy": "^1.16.1"
+    }
+}

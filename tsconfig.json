@@ -3,7 +3,7 @@
         "strict": true,
         "target": "ESNext",
         "module": "ESNext",
-        "moduleResolution": "nodenext",
+        "moduleResolution": "bundler",
         "skipLibCheck": true,
         "lib": [
             "ESNext",
@@ -12,7 +12,8 @@
         "outDir": "dist"
     },
     "include": [
-        "src/**/*"
+        "src/**/*",
+        "packages/**/*"
     ],
     "ts-node": {
         "transpileOnly": true,
