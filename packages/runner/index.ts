@@ -10,6 +10,10 @@ if (process.env.SENTRY_DSN !== undefined) {
     });
 }
 
+if (process.env.MEDIABOT_WORKDIR) {
+    process.chdir(process.env.MEDIABOT_WORKDIR);
+}
+
 const [ moduleSpecifier ] = process.argv.splice(2, 1);
 
 const abortController = new AbortController();
