@@ -1,6 +1,7 @@
 import { execa } from 'execa';
 import ffmpeg from 'fluent-ffmpeg';
 import * as nodeFs from 'node:fs/promises';
+import * as nodePath from 'node:path';
 import * as nodeProcess from 'node:process';
 import * as radash from 'radash';
 import * as uuid from 'uuid';
@@ -75,6 +76,32 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
             const videoId = uuid.v4();
             const ref = `ytdlp:video:${ videoId }`;
 
+            const possibleFilenames = radash.unique([
+                nodePath.join(tmpDir, output.filename),
+                nodePath.join(tmpDir, `${ nodePath.basename(output.filename, nodePath.extname(output.filename)) }.mp4`),
+            ]);
+            let filename: string | undefined;
+            for (const possibleFilename of possibleFilenames) {
+                try {
+                    await nodeFs.stat(`${ tmpDir }/${ possibleFilename }`);
+                    filename = possibleFilename;
+                    break;
+                } catch (err: any) {
+                    if (err.code === 'ENOENT') {
+                        continue;
+                    }
+
+                    throw err;
+                }
+            }
+
+            if (filename === undefined) {
+                const allFiles = await nodeFs.readdir(tmpDir);
+                throw new Error(
+                    `Could not find downloaded file in ${ tmpDir }. Possible filenames: ${ possibleFilenames.join(', ') }. All files: ${ allFiles.join(', ') }`,
+                );
+            }
+
             let size = output.width && output.height
                 ? {
                     width: output.width,
@@ -84,10 +111,10 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
 
             if (size === undefined) {
                 size = await new Promise(resolve => {
-                    ffmpeg.ffprobe(`${ tmpDir }/${ output.filename }`, (err, metadata) => {
+                    ffmpeg.ffprobe(filename!, (err, metadata) => {
                         if (err) {
                             log.error({
-                                file: `${ tmpDir }/${ output.filename }`,
+                                filename,
                                 err,
                             }, 'ffprobe failed');
                         }
@@ -110,7 +137,7 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
 
             await redis.client.setex(
                 `${ redis.prefix }:${ ref }`, 120,
-                await nodeFs.readFile(`${ tmpDir }/${ output.filename }`),
+                await nodeFs.readFile(filename),
             );
 
             return {
