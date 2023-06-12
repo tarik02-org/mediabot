@@ -83,7 +83,7 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
             let filename: string | undefined;
             for (const possibleFilename of possibleFilenames) {
                 try {
-                    await nodeFs.stat(`${ tmpDir }/${ possibleFilename }`);
+                    await nodeFs.stat(possibleFilename);
                     filename = possibleFilename;
                     break;
                 } catch (err: any) {
