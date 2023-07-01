@@ -62,8 +62,10 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
                         },
                         ...tiktokResult.value.type === 'video'
                             ? {
-                                width: tiktokResult.value.video.width,
-                                height: tiktokResult.value.video.height,
+                                size: {
+                                    width: tiktokResult.value.video.width,
+                                    height: tiktokResult.value.video.height,
+                                },
                                 duration: tiktokResult.value.video.duration,
                             }
                             : {},
