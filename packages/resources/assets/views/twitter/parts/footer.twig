@@ -1,12 +1,14 @@
 <div class="gap-[30px] mt-[5px] flex">
-    <div class="flex gap-[5px] items-center flex-1 w-0 max-w-[80px]">
-        <div class="w-[18.75px] h-[18.75px] fill-[#536571]">
-            {% include "twitter/icons/replies.svg" %}
+    {% if tweet.reply_count is defined %}
+        <div class="flex gap-[5px] items-center flex-1 w-0 max-w-[80px]">
+            <div class="w-[18.75px] h-[18.75px] fill-[#536571]">
+                {% include "twitter/icons/replies.svg" %}
+            </div>
+            <span class="text-[15px] text-[#536571]">
+                {{ tweet.reply_count }}
+            </span>
         </div>
-        <span class="text-[15px] text-[#536571]">
-            {{ tweet.reply_count }}
-        </span>
-    </div>
+    {% endif %}
 
     <div class="flex gap-[5px] items-center flex-1 w-0 max-w-[80px]">
         <div class="w-[18.75px] h-[18.75px] fill-[#536571]">
