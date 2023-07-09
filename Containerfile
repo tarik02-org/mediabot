@@ -2,12 +2,12 @@
 # base
 ####################################################################################################
 
-FROM docker.io/library/debian:latest AS base
+FROM docker.io/library/debian:bullseye AS base
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
 
-RUN sed -i'.bak' 's/$/ contrib/' /etc/apt/sources.list && \
+RUN sed -i 's/$/ contrib/' /etc/apt/sources.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         curl \
