@@ -23,8 +23,10 @@ const vite = await createViteServer({
     appType: 'custom',
     plugins: [
         {
-            async handleHotUpdate() {
-                await restartApplication();
+            async handleHotUpdate({ modules }) {
+                if (modules.length !== 0) {
+                    await restartApplication();
+                }
             },
         },
     ],
