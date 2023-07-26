@@ -33,7 +33,7 @@
         <div class="-m-[12px] mt-[8px] flex flex-wrap gap-[2px]">
             {% for media in tweet.extended_entities.media %}
                 {% if media.type in ['photo', 'video'] %}
-                    <div class="grow basis-[calc(50%-1px)] relative aspect-[{{ media.original_info.width }}/{{ media.original_info.height }}]">
+                    <div class="grow basis-[calc(50%-1px)] relative aspect-[{{ media.sizes.large.w }}/{{ media.sizes.large.h }}]">
                         <img
                             src="{{ media.media_url_https }}"
                             class="absolute inset-0 object-cover w-full h-full"
