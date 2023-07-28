@@ -24,17 +24,20 @@ const DEFAULT_HEADERS = {
 export const downloadFromTiktok = async (query: Query) => {
     const cookieJar = new CookieJar();
 
-    const sessionId = process.env.TT_WEBID!;
-    await cookieJar.setCookie(new Cookie({
-        key: 'tt_webid',
-        value: sessionId,
-        domain: 'www.tiktok.com',
-    }), 'https://www.tiktok.com/');
-    await cookieJar.setCookie(new Cookie({
-        key: 'tt_webid_v2',
-        value: sessionId,
-        domain: 'www.tiktok.com',
-    }), 'https://www.tiktok.com/');
+    const sessionId = process.env.TT_SESSION_ID;
+    if (sessionId) {
+        await cookieJar.setCookie(new Cookie({
+            key: 'sessionid',
+            value: sessionId,
+            domain: 'www.tiktok.com',
+        }), 'https://www.tiktok.com/');
+
+        await cookieJar.setCookie(new Cookie({
+            key: 'sessionid_ss',
+            value: sessionId,
+            domain: 'www.tiktok.com',
+        }), 'https://www.tiktok.com/');
+    }
 
     const got = Got.extend({
         cookieJar,
