@@ -277,10 +277,10 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
                 break;
             }
 
-            case !!lodash.get(storyData, 'rootView.props.user.id'): {
+            case !!lodash.get(storyData, 'rootView.props.user.id') || !!lodash.get(storyData, 'rootView.props.user_id'): {
                 url = `https://www.instagram.com${ storyData.url }`;
 
-                const userId = storyData.rootView.props.user.id;
+                const userId = storyData.rootView.props.user_id || storyData.rootView.props.user.id;
 
                 const rawData = await page.evaluate(
                     async (url: string) => {
