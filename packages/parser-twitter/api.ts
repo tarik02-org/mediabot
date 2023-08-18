@@ -18,7 +18,7 @@ export const processor = createRequestProcessor(
 
 export const matcher = createRequestMatcher(
     [
-        /(?:https?:\/\/)?(?:www\.)?twitter\.com\/(?<user>[^/]+)\/status\/(?<id>\d+)/,
+        /(?:https?:\/\/)?(?:www\.)?(twitter|x)\.com\/(?<user>[^/]+)\/status\/(?<id>\d+)/,
     ],
     rawMatch => {
         const match = z.object({
