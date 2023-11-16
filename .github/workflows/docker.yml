@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   build_and_push:
-    runs-on: ubuntu-latest
+    runs-on: cluster0
 
     steps:
       - name: Checkout
