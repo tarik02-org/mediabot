@@ -53,7 +53,6 @@ export const downloadFromTiktok = async (query: Query) => {
 
     const {
         __DEFAULT_SCOPE__: {
-            'seo.abtest': { canonical },
             'webapp.video-detail': {
                 itemInfo: { itemStruct },
                 shareMeta,
@@ -61,15 +60,15 @@ export const downloadFromTiktok = async (query: Query) => {
         }
     } = z.object({
         __DEFAULT_SCOPE__: z.object({
-            'seo.abtest': z.object({
-                canonical: z.string(),
-            }),
             'webapp.video-detail': z.object({
                 itemInfo: z.object({
                     itemStruct: z.intersection(
                         z.object({
                             id: z.string(),
                             desc: z.string(),
+                            author: z.object({
+                                uniqueId: z.string(),
+                            }),
                         }),
                         z.union([
                             z.object({
@@ -118,11 +117,13 @@ export const downloadFromTiktok = async (query: Query) => {
         ),
     );
 
+    const url = `https://www.tiktok.com/@${itemStruct.author.uniqueId}/video/${itemStruct.id}`;
+
     switch (itemStruct.type) {
         case 'images':
             return {
                 title: shareMeta.desc,
-                url: canonical,
+                url,
 
                 type: 'images' as const,
 
@@ -142,7 +143,7 @@ export const downloadFromTiktok = async (query: Query) => {
         case 'video':
             return {
                 title: shareMeta.desc,
-                url: canonical,
+                url,
 
                 type: 'video' as const,
 
