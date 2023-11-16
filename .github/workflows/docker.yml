@@ -20,7 +20,9 @@ permissions:
 
 jobs:
   build_and_push:
-    runs-on: cluster0
+    runs-on:
+      group: Default
+      labels: cluster0
 
     steps:
       - name: Checkout
