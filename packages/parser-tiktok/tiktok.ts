@@ -51,87 +51,113 @@ export const downloadFromTiktok = async (query: Query) => {
         }).text(),
     );
 
-    const data = z.object({
-        ItemModule: z.record(
-            z.union([
-                z.object({
-                    imagePost: z.object({
-                        images: z.array(z.object({
-                            imageURL: z.object({
-                                urlList: z.array(z.string()),
-                            }),
-                            imageWidth: z.number(),
-                            imageHeight: z.number(),
-                        })),
-                    }),
+    const {
+        __DEFAULT_SCOPE__: {
+            'seo.abtest': { canonical },
+            'webapp.video-detail': {
+                itemInfo: { itemStruct },
+                shareMeta,
+            },
+        }
+    } = z.object({
+        __DEFAULT_SCOPE__: z.object({
+            'seo.abtest': z.object({
+                canonical: z.string(),
+            }),
+            'webapp.video-detail': z.object({
+                itemInfo: z.object({
+                    itemStruct: z.intersection(
+                        z.object({
+                            id: z.string(),
+                            desc: z.string(),
+                        }),
+                        z.union([
+                            z.object({
+                                imagePost: z.object({
+                                    images: z.array(z.object({
+                                        imageURL: z.object({
+                                            urlList: z.array(z.string()),
+                                        }),
+                                        imageWidth: z.number(),
+                                        imageHeight: z.number(),
+                                    })),
+                                }),
+                            }).transform(data => ({
+                                ...data,
+                                type: 'images' as const,
+                            })),
+                            z.object({
+                                video: z.object({
+                                    width: z.number(),
+                                    height: z.number(),
+                                    duration: z.number(),
+                                    playAddr: z.string(),
+                                    downloadAddr: z.string(),
+                                    bitrateInfo: z.array(z.object({
+                                        PlayAddr: z.object({
+                                            UrlList: z.array(z.string()),
+                                        }),
+                                    })),
+                                }),
+                            }).transform(data => ({
+                                ...data,
+                                type: 'video' as const,
+                            })),
+                        ]),
+                    ),
                 }),
-                z.object({
-                    video: z.object({
-                        playAddr: z.string(),
-                        width: z.number(),
-                        height: z.number(),
-                        duration: z.number(),
-                    }),
+                shareMeta: z.object({
+                    title: z.string(),
+                    desc: z.string(),
                 }),
-            ]),
-        ),
-        SEOState: z.object({
-            metaParams: z.object({
-                title: z.string(),
-                description: z.string(),
-                canonicalHref: z.string(),
             }),
         }),
     }).parse(
         JSON.parse(
-            dom.window.document.querySelector<HTMLScriptElement>('script#SIGI_STATE')!.textContent!,
+            dom.window.document.querySelector<HTMLScriptElement>('script#__UNIVERSAL_DATA_FOR_REHYDRATION__')!.textContent!,
         ),
     );
 
-    const module = Object.values(data.ItemModule)[ 0 ];
+    switch (itemStruct.type) {
+        case 'images':
+            return {
+                title: shareMeta.desc,
+                url: canonical,
 
-    if ('imagePost' in module) {
-        return {
-            title: data.SEOState.metaParams.title,
-            url: data.SEOState.metaParams.canonicalHref,
+                type: 'images' as const,
 
-            type: 'images',
+                images: itemStruct.imagePost.images.map(image => ({
+                    width: image.imageWidth,
+                    height: image.imageHeight,
 
-            images: module.imagePost.images.map(image => ({
-                width: image.imageWidth,
-                height: image.imageHeight,
+                    download: async () => await got.get(image.imageURL.urlList[0], {
+                        headers: {
+                            ...DEFAULT_HEADERS,
+                        },
+                        followRedirect: false,
+                    }).buffer(),
+                })),
+            };
 
-                download: async () => await got.get(image.imageURL.urlList[ 0 ], {
+        case 'video':
+            return {
+                title: shareMeta.desc,
+                url: canonical,
+
+                type: 'video' as const,
+
+                video: {
+                    width: itemStruct.video.width,
+                    height: itemStruct.video.height,
+                    duration: itemStruct.video.duration,
+                },
+    
+                downloadVideo: async () => await got.get(itemStruct.video.bitrateInfo[0].PlayAddr.UrlList[0], {
                     headers: {
                         ...DEFAULT_HEADERS,
                     },
                     followRedirect: false,
                 }).buffer(),
-            })),
-        } as const;
+            };
     }
-
-    if ('video' in module) {
-        return {
-            title: data.SEOState.metaParams.title,
-            url: data.SEOState.metaParams.canonicalHref,
-
-            type: 'video',
-
-            video: {
-                width: module.video.width,
-                height: module.video.height,
-                duration: module.video.duration,
-            },
-
-            downloadVideo: async () => await got.get(module.video.playAddr, {
-                headers: {
-                    ...DEFAULT_HEADERS,
-                },
-                followRedirect: false,
-            }).buffer(),
-        } as const;
-    }
-
-    throw new Error('Unknown module type');
 };

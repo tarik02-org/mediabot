@@ -13,6 +13,9 @@ import { downloadFromTiktok } from './tiktok';
 export type Query = z.TypeOf<(typeof processor)['querySchema']>;
 export type Result = z.TypeOf<(typeof processor)['resultSchema']>;
 
+const RESULT_CACHE = 600;
+const DATA_CACHE = RESULT_CACHE * 1.5;
+
 export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) => await radash.defer(async defer => {
     await processRequests(
         {
@@ -31,69 +34,13 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
             ]);
 
             if (musicaldownResult.status === 'rejected') {
-                log.error(musicaldownResult.reason, `Download from Musicaldown failed for ${ query.source }`);
+                log.error(musicaldownResult.reason, `Download from Musicaldown failed for "${query.source}"`);
                 Sentry.captureException(musicaldownResult.reason);
             }
 
             if (tiktokResult.status === 'rejected') {
-                log.error(tiktokResult.reason, `Download from Tiktok failed for ${ query.source }`);
+                log.error(tiktokResult.reason, `Download from Tiktok failed for "${query.source}"`);
                 Sentry.captureException(tiktokResult.reason);
-            }
-
-            if (
-                musicaldownResult.status === 'fulfilled' &&
-                musicaldownResult.value !== null &&
-                tiktokResult.status === 'fulfilled'
-            ) {
-                const ref = `tiktok:video:${ uuid.v4() }`;
-                const videoData = await musicaldownResult.value.downloadVideo();
-
-                await redis.client.setex(`${ redis.prefix }:${ ref }`, 120, videoData);
-
-                return {
-                    title: tiktokResult.value.title,
-                    url: musicaldownResult.value.url,
-                    media: {
-                        type: 'video',
-                        data: {
-                            type: 'ref',
-                            ref,
-                            name: 'video.mp4',
-                        },
-                        ...tiktokResult.value.type === 'video'
-                            ? {
-                                size: {
-                                    width: tiktokResult.value.video.width,
-                                    height: tiktokResult.value.video.height,
-                                },
-                                duration: tiktokResult.value.video.duration,
-                            }
-                            : {},
-                    },
-                };
-            }
-
-            if (
-                musicaldownResult.status === 'fulfilled' &&
-                musicaldownResult.value !== null
-            ) {
-                const ref = `tiktok:video:${ uuid.v4() }`;
-                const videoData = await musicaldownResult.value.downloadVideo();
-
-                await redis.client.setex(`${ redis.prefix }:${ ref }`, 120, videoData);
-
-                return {
-                    title: musicaldownResult.value.title,
-                    url: musicaldownResult.value.url,
-                    media: {
-                        type: 'video',
-                        data: {
-                            type: 'ref',
-                            ref,
-                            name: 'video.mp4',
-                        },
-                    },
-                };
             }
 
             if (tiktokResult.status === 'fulfilled') {
@@ -106,9 +53,9 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
                                 type: 'photos',
                                 items: await Promise.all(tiktokResult.value.images.map(async image => {
                                     const data = await image.download();
-                                    const ref = `tiktok:image:${ uuid.v4() }`;
+                                    const ref = `tiktok:image:${uuid.v4()}`;
 
-                                    await redis.client.setex(`${ redis.prefix }:${ ref }`, 120, data);
+                                    await redis.client.setex(`${redis.prefix}:${ref}`, DATA_CACHE, data);
 
                                     return {
                                         data: {
@@ -127,10 +74,10 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
                     }
 
                     case 'video': {
-                        const ref = `tiktok:video:${ uuid.v4() }`;
+                        const ref = `tiktok:video:${uuid.v4()}`;
                         const videoData = await tiktokResult.value.downloadVideo();
 
-                        await redis.client.setex(`${ redis.prefix }:${ ref }`, 120, videoData);
+                        await redis.client.setex(`${redis.prefix}:${ref}`, DATA_CACHE, videoData);
 
                         return {
                             title: tiktokResult.value.title,
@@ -153,14 +100,37 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
                 }
             }
 
+            if (
+                musicaldownResult.status === 'fulfilled' &&
+                musicaldownResult.value !== null
+            ) {
+                const ref = `tiktok:video:${uuid.v4()}`;
+                const videoData = await musicaldownResult.value.downloadVideo();
+
+                await redis.client.setex(`${redis.prefix}:${ref}`, DATA_CACHE, videoData);
+
+                return {
+                    title: musicaldownResult.value.title,
+                    url: musicaldownResult.value.url,
+                    media: {
+                        type: 'video',
+                        data: {
+                            type: 'ref',
+                            ref,
+                            name: 'video.mp4',
+                        },
+                    },
+                };
+            }
+
             throw new Error(
-                `Download from Musicaldown and Tiktok failed for ${ query.source }`,
+                `Download from Musicaldown and Tiktok failed for ${query.source}`,
             );
         },
         {
             abortSignal,
-            concurrency: 4,
-            cacheTimeout: 60,
+            concurrency: 8,
+            cacheTimeout: RESULT_CACHE,
         },
     );
 
