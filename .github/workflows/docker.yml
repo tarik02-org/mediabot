@@ -20,9 +20,7 @@ permissions:
 
 jobs:
   build_and_push:
-    runs-on:
-      group: Default
-      labels: cluster0
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
