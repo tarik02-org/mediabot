@@ -96,7 +96,7 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
     } else {
         browser = await puppeteer.launch({
             executablePath: env.PUPPETEER_EXECUTABLE_PATH,
-            args: env.PUPPETEER_ARGS,
+            args: env.PUPPETEER_ARGS ?? [],
             userDataDir: env.PUPPETEER_DATA_PATH ?? nodePath.join(process.cwd(), './data', account.username),
             defaultViewport: { width: 1280, height: 1600 },
             handleSIGINT: false,
@@ -120,7 +120,6 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
     });
 
     const handleChallenge = async (): Promise<never> => {
-        abortController.abort(new Error('Instagram challenge'));
         await prisma.instagramParserAccount.update({
             where: {
                 id: account!.id,
