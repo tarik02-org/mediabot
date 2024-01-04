@@ -143,14 +143,14 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
         let graphQlResponse: any = null;
 
         page.on('response', async response => {
-            log.debug({
+            log.trace({
                 url: response.url(),
             }, 'Response received');
 
             if ((new URL(response.url())).pathname.match(/^\/graphql\/query\/?$/)) {
                 const json = await response.json();
 
-                log.debug({
+                log.trace({
                     json,
                 }, 'graph ql response');
 
@@ -186,7 +186,7 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
                 content: await page.content(),
             }, 'No details found');
         } else {
-            log.debug({
+            log.trace({
                 link,
                 details,
             }, 'Details on the page');
@@ -196,7 +196,7 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
         const postData = findPostData(details)[ 0 ];
         const storyData = findStoryData(details)[ 0 ];
 
-        log.debug({
+        log.trace({
             link,
             sharedData,
             postData,
@@ -210,6 +210,8 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
         const media: Array<Result['media'][number]> = [];
 
         const downloadToRef = async (ref: string, url: string) => {
+            log.debug({ ref, url }, 'Downloading raw');
+
             const data = Buffer.from(
                 await page.evaluate(async url => {
                     const blob = await (await fetch(url)).blob();
@@ -340,6 +342,8 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
 
                 const items = mediaData.edge_sidecar_to_children?.edges.map((edge: any) => edge.node) || [ mediaData ];
                 title = mediaData.edge_media_to_caption.edges[ 0 ].node.text;
+
+                log.debug({ items }, 'media items');
 
                 for (const item of items) {
                     switch (true) {
