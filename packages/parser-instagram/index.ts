@@ -4,6 +4,7 @@ import { Browser } from 'puppeteer';
 import * as radash from 'radash';
 import * as uuid from 'uuid';
 import { z } from 'zod';
+import got from 'got';
 
 import { processRequests } from '@mediabot/broker/processRequests';
 import { RetryRequestError } from '@mediabot/broker/RetryRequestError';
@@ -212,24 +213,7 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
         const downloadToRef = async (ref: string, url: string) => {
             log.debug({ ref, url }, 'Downloading raw');
 
-            const data = Buffer.from(
-                await page.evaluate(async url => {
-                    const blob = await (await fetch(url)).blob();
-
-                    return await new Promise<string>((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.addEventListener(
-                            'loadend',
-                            () => resolve(
-                                (reader.result! as string).split(',')[ 1 ],
-                            ),
-                        );
-                        reader.addEventListener('error', reject);
-                        reader.readAsDataURL(blob);
-                    });
-                }, url),
-                'base64url',
-            );
+            const data = (await got(url, { responseType: 'buffer' })).body;
 
             await redis.client.setex(`${ redis.prefix }:${ ref }`, 120, data);
         };
