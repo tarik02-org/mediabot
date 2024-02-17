@@ -822,17 +822,12 @@ export const main = async (process: NodeJS.Process, abortSignal: AbortSignal) =>
                             case 'instagram':
                                 await processDefaultMediaCallback(
                                     item.context,
-                                    item.result.title,
-                                    item.result.url,
+                                    item.result.title ?? null,
+                                    item.result.url ?? null,
                                     await Promise.all(item.result.media.map(async media => ({
                                         type: media.type,
-                                        url: media.data.type === 'url'
-                                            ? media.data.url
-                                            : new InputFile(
-                                                (await redis.client.getBuffer(`${ redis.prefix }:${ media.data.ref }`))!,
-                                                media.data.name,
-                                            ),
-                                        size: media.size,
+                                        url: media.url,
+                                        size: media.dimensions,
                                     }))),
                                 );
                                 break;

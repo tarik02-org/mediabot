@@ -2,15 +2,23 @@ import { z } from 'zod';
 
 import { createRequestMatcher, createRequestProcessor } from '@mediabot/broker';
 
-const dataSchema = z.union([
+export const mediaSchema = z.discriminatedUnion('type', [
     z.object({
-        type: z.literal('url'),
+        type: z.literal('photo'),
         url: z.string(),
+        dimensions: z.object({
+            width: z.number(),
+            height: z.number(),
+        }).optional(),
     }),
     z.object({
-        type: z.literal('ref'),
-        ref: z.string(),
-        name: z.string(),
+        type: z.literal('video'),
+        url: z.string(),
+        dimensions: z.object({
+            width: z.number(),
+            height: z.number(),
+        }).optional(),
+        duration: z.number().nullable(),
     }),
 ]);
 
@@ -21,27 +29,9 @@ export const processor = createRequestProcessor(
         link: z.string(),
     }),
     z.object({
-        title: z.nullable(z.string()),
-        url: z.nullable(z.string()),
-        media: z.array(z.union([
-            z.object({
-                type: z.literal('photo'),
-                data: dataSchema,
-                size: z.optional(z.object({
-                    width: z.number(),
-                    height: z.number(),
-                })),
-            }),
-            z.object({
-                type: z.literal('video'),
-                data: dataSchema,
-                size: z.optional(z.object({
-                    width: z.number(),
-                    height: z.number(),
-                })),
-                duration: z.optional(z.number()),
-            }),
-        ])),
+        title: z.string().optional(),
+        url: z.string().optional(),
+        media: mediaSchema.array(),
     }),
     data => data.key,
 );

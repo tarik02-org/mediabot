@@ -12,14 +12,7 @@ export const env = z.object({
 
     DATABASE_URL: z.string(),
 
-    PUPPETEER_EXECUTABLE_PATH: z.string().optional(),
-    PUPPETEER_ARGS: z.preprocess(
-        (value: unknown) => typeof value === 'string' ? value.split(' ') : value,
-        z.array(z.string()),
-    ).optional(),
-    PUPPETEER_DATA_PATH: z.string().optional(),
-    PUPPETEER_REMOTE_URL: z.string().optional(),
-    PUPPETEER_PROXY: z.string().optional(),
+    INSTAGRAM_UAPI_URL: z.string(),
 }).parse(
     await loadEnv([
         '',
