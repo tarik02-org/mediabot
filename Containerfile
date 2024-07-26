@@ -61,7 +61,9 @@ RUN node .yarn/releases/yarn-3.6.0.cjs install --immutable
 
 FROM base AS ytdlp
 
-RUN curl -fsSL https://github.com/yt-dlp/yt-dlp/releases/download/2023.07.06/yt-dlp -o /usr/local/bin/yt-dlp && \
+ARG YTDLP_VERSION=2024.07.25
+ENV YTDLP_VERSION=${YTDLP_VERSION}
+RUN curl -fsSL https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/yt-dlp -o /usr/local/bin/yt-dlp && \
     chmod a+rx /usr/local/bin/yt-dlp
 
 
